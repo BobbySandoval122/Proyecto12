@@ -5,7 +5,7 @@
 | Tarea | Donde |
 |---|---|
 | Escribir codigo, plantillas y documentacion | Tu laptop |
-| Levantar PostgreSQL y Redis | **Solo en la VM de GCP** |
+| Levantar PostgreSQL, Redis y MongoDB | **Solo en la VM de GCP** |
 | Correr migraciones y seeds | **Solo en la VM de GCP** |
 | Probar la aplicacion con datos | **Solo en la VM de GCP** |
 
@@ -20,7 +20,7 @@ base, la de la VM, para que todos vean el mismo estado.
 cd ~/Proyecto12
 git pull origin main
 cp .env.example .env
-nano .env          # completar POSTGRES_PASSWORD y FLASK_SECRET_KEY
+nano .env          # completar POSTGRES_PASSWORD, FLASK_SECRET_KEY y las MONGO_*_PASSWORD
 ```
 
 Para generar una clave secreta larga:
@@ -127,6 +127,13 @@ docker compose exec postgres psql -U devoluciones_app -d devoluciones
 # Consola de Redis
 docker compose exec redis redis-cli
 
+# Consola de MongoDB (con el usuario de la aplicacion). Toma las credenciales
+# de las variables del contenedor, asi no hay que teclear la contrasena.
+docker compose exec mongo sh -c 'mongosh -u "$MONGO_APP_USER" -p "$MONGO_APP_PASSWORD" --authenticationDatabase "$MONGO_DB" "$MONGO_DB"'
+
+# Comprobar que MongoDB creo las colecciones e indices de la seccion 5.4
+docker compose exec mongo sh -c 'mongosh --quiet -u "$MONGO_APP_USER" -p "$MONGO_APP_PASSWORD" --authenticationDatabase "$MONGO_DB" "$MONGO_DB" --eval "db.getCollectionNames().forEach(c => printjson({coleccion: c, indices: db[c].getIndexes().map(i => i.name)}))"'
+
 # Reiniciar solo la aplicacion tras un cambio de codigo Python
 # (las plantillas se recargan solas cuando FLASK_ENV=development)
 docker compose restart app
@@ -137,6 +144,25 @@ docker compose up -d app
 
 # Ver los ultimos errores
 docker compose logs --tail=100 app
+```
+
+### Microservicio auth (segundo parcial)
+
+```bash
+# Construir y levantar (tras cualquier cambio en services/auth o shared/)
+docker compose up -d --build auth
+
+# Salud del servicio
+curl -s localhost:8001/health
+
+# Pruebas unitarias dentro del contenedor
+docker compose run --rm --no-deps auth python -m pytest -v
+
+# Swagger UI: http://<IP-de-la-VM>:8001/docs  (abrir el puerto 8001 en GCP)
+
+# Claves que crea en Redis
+docker compose exec redis redis-cli --scan --pattern 'devoluciones:sesion_api:*'
+docker compose exec redis redis-cli --scan --pattern 'devoluciones:jwt_revocado:*'
 ```
 
 ### Empezar la base desde cero
