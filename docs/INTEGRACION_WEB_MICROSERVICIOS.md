@@ -29,6 +29,8 @@ elimina la sesion local.
 | Generar etiqueta | `POST inspecciones /api/v1/inspecciones/inventario/{id}/etiqueta` |
 | Registrar costos | `POST reembolsos-costos /api/v1/reembolsos-costos/costos` |
 | Resolver reembolso | `POST reembolsos-costos /api/v1/reembolsos-costos/reembolsos` |
+| Consultar resumen y Pareto | `GET analisis-auditoria /api/v1/analisis/resumen` y `/pareto` |
+| Sincronizar datos para causas | `POST analisis-auditoria /api/v1/analisis/sincronizar` |
 
 Las consultas compuestas del expediente y los paneles conservan lectura
 relacional directa por ahora: agregan informacion de varios dominios para una
@@ -58,7 +60,9 @@ El 21 de octubre de 2026 se ejecuto desde formularios web el caso
 4. inspeccion refrigerada por `inspecciones`, con `mongo_doc_id` real;
 5. disposicion a inventario y etiqueta `REC-2026-0033`;
 6. reembolso de 32.24 por `reembolsos-costos`;
-7. cierre automatico de la devolucion y liberacion del lock Redis (`TTL=-2`).
+7. cierre automatico de la devolucion y liberacion del lock Redis (`TTL=-2`);
+8. sincronizacion del panel de causas hacia MongoDB y consulta Pareto con cache
+   Redis mediante `analisis-auditoria`.
 
 Todos los formularios respondieron con redireccion HTTP 302, cada API registro
 su request 200/201 con usuario y correlation id, y PostgreSQL termino con la
