@@ -16,6 +16,7 @@
 | RF-09 | `services/evidencias`: comentario JSON/XML y archivos privados con metadatos MongoDB | `services/evidencias/tests/test_seguridad_archivos.py` |
 | RF-23, RF-26, RF-30 | `services/analisis_auditoria`: snapshot, Pareto MongoDB, cache Redis y consulta de bitacora | `services/analisis_auditoria/tests/test_pareto.py` |
 | RF-32 | `app/microservicios.py` y `/integracion/servicios` consultan los ocho health checks | `app/tests/test_microservicios.py` |
+| Integracion web/API | `app/api_client.py` y blueprints web: JWT/refresh y flujo funcional por HTTP | `app/tests/test_api_client.py` y prueba E2E en VM |
 
 Relaciona los identificadores del documento con el lugar del repositorio donde
 quedan implementados. **Actualiza esta tabla en el mismo commit en el que

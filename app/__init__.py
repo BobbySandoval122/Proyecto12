@@ -77,6 +77,7 @@ def create_app():
             "usuario_actual": usuario_actual(),
             "rol_actual": rol_actual(),
             "TODOS": list(TODOS_LOS_ROLES),
+            "modo_distribuido": app.config["USE_MICROSERVICES"],
         }
 
     return app

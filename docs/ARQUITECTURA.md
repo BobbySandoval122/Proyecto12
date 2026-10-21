@@ -19,9 +19,13 @@ disponible durante solicitud e inspeccion. Todos validan el mismo JWT y comprueb
 sesion siga activa y que el token no haya sido revocado. La ficha individual y
 el guion de evidencias estan en `docs/MICROSERVICIOS_AVANCE_ROBERTO.md`.
 
-El web conserva su operacion independiente y expone `/integracion/servicios`
-para que un administrador consulte los ocho health checks con timeout y
-degradacion controlada (`app/microservicios.py`).
+El web conserva un modo de contingencia independiente y expone
+`/integracion/servicios` para que un administrador consulte los ocho health
+checks. En la rama `roberto/integracion-web-microservicios`, el login, las
+consultas de ventas/devoluciones y las mutaciones del proceso completo se
+ejecutan por HTTP contra las API. El cliente comun (`app/api_client.py`) conserva
+JWT en la sesion Redis, renueva access tokens y propaga correlation ids. La
+matriz exacta esta en `docs/INTEGRACION_WEB_MICROSERVICIOS.md`.
 
 ## Por que un monolito ahora
 

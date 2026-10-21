@@ -9,6 +9,18 @@ docker compose up -d --build
 docker compose ps
 ```
 
+En la rama de integracion, confirma en `.env`:
+
+```dotenv
+USE_MICROSERVICES=true
+MICROSERVICE_TIMEOUT=5
+```
+
+Con `true`, la barra superior muestra **API distribuida** y las operaciones
+criticas pasan por los servicios. `false` habilita el modo de contingencia del
+monolito. La matriz de llamadas esta en
+`docs/INTEGRACION_WEB_MICROSERVICIOS.md`.
+
 | Servicio | API | Swagger | Salud |
 |---|---|---|---|
 | auth | `http://HOST:8001/api/v1/auth` | `http://HOST:8001/docs` | `:8001/health` |
