@@ -78,7 +78,7 @@ services:
       dockerfile: docker/Dockerfile
     container_name: devoluciones_app
     restart: unless-stopped
-    env_file: .env
+    env_file: ${APP_ENV_FILE:-.env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,7 +102,7 @@ services:
       dockerfile: services/auth/Dockerfile
     container_name: devoluciones_auth
     restart: unless-stopped
-    env_file: .env
+    env_file: ${APP_ENV_FILE:-.env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -110,6 +110,100 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:8001:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  logistica:
+    build:
+      context: .
+      dockerfile: services/logistica/Dockerfile
+    container_name: devoluciones_logistica
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8003:8000"]
+
+  inspecciones:
+    build:
+      context: .
+      dockerfile: services/inspecciones/Dockerfile
+    container_name: devoluciones_inspecciones
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+    ports: ["0.0.0.0:8004:8000"]
+
+  reembolsos-costos:
+    build:
+      context: .
+      dockerfile: services/reembolsos_costos/Dockerfile
+    container_name: devoluciones_reembolsos_costos
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8005:8000"]
+
+  ventas-catalogos:
+    build:
+      context: .
+      dockerfile: services/ventas_catalogos/Dockerfile
+    container_name: devoluciones_ventas_catalogos
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8006:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  evidencias:
+    build:
+      context: .
+      dockerfile: services/evidencias/Dockerfile
+    container_name: devoluciones_evidencias
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    environment:
+      EVIDENCIAS_DIR: /srv/evidencias_privadas
+    volumes:
+      - evidencias_data:/srv/evidencias_privadas
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+    ports: ["0.0.0.0:8007:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  analisis-auditoria:
+    build:
+      context: .
+      dockerfile: services/analisis_auditoria/Dockerfile
+    container_name: devoluciones_analisis_auditoria
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+    ports: ["0.0.0.0:8008:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s
@@ -124,7 +218,7 @@ services:
       dockerfile: services/devoluciones/Dockerfile
     container_name: devoluciones_devoluciones
     restart: unless-stopped
-    env_file: .env
+    env_file: ${APP_ENV_FILE:-.env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -144,3 +238,4 @@ volumes:
   postgres_data:
   redis_data:
   mongo_data:
+  evidencias_data:

@@ -1,5 +1,33 @@
 # Guia de arranque
 
+## Microservicios del segundo parcial
+
+Despues de aplicar migraciones y cargar los datos de demostracion:
+
+```bash
+docker compose up -d --build
+docker compose ps
+```
+
+| Servicio | API | Swagger | Salud |
+|---|---|---|---|
+| auth | `http://HOST:8001/api/v1/auth` | `http://HOST:8001/docs` | `:8001/health` |
+| devoluciones | `http://HOST:8002/api/v1/devoluciones` | `http://HOST:8002/docs` | `:8002/health` |
+| logistica | `http://HOST:8003/api/v1/logistica` | `http://HOST:8003/docs` | `:8003/health` |
+| inspecciones | `http://HOST:8004/api/v1/inspecciones` | `http://HOST:8004/docs` | `:8004/health` |
+| reembolsos-costos | `http://HOST:8005/api/v1/reembolsos-costos` | `http://HOST:8005/docs` | `:8005/health` |
+| ventas-catalogos | `http://HOST:8006/api/v1/ventas` y `/catalogos` | `http://HOST:8006/docs` | `:8006/health` |
+| evidencias | `http://HOST:8007/api/v1/evidencias` | `http://HOST:8007/docs` | `:8007/health` |
+| analisis-auditoria | `http://HOST:8008/api/v1/analisis` y `/auditoria` | `http://HOST:8008/docs` | `:8008/health` |
+
+`HOST` es la IP o dominio de la VM. Los ocho servicios comparten
+`JWT_SECRET`; no debe publicarse ni quedar escrito en el repositorio.
+
+Para validar Compose sin crear un archivo con secretos puede usarse
+`APP_ENV_FILE=.env.example docker compose --env-file .env.example config`.
+Para desplegar, copie `.env.example` a `.env`, reemplace todos los valores de
+ejemplo y no agregue `.env` a Git.
+
 ## Donde se ejecuta cada cosa
 
 | Tarea | Donde |

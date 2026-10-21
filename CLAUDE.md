@@ -11,7 +11,7 @@ refrigerados y no refrigerados mediante logistica inversa y analisis de causa
 raiz. Proyecto 12, Equipo 02, materia Integracion de Aplicaciones
 Computacionales, UDEM.
 
-Entrega actual: **primer parcial — monolito web funcional**.
+Entrega actual: **segundo parcial — monolito web ampliado y ocho microservicios**.
 
 ## Restricciones que no se negocian
 
@@ -87,15 +87,11 @@ En particular: **no hay ORM**. Las consultas son SQL con `psycopg2` y parametros
 ligados, por RNF-11 (proteccion contra inyeccion SQL). Nunca se concatena
 entrada del usuario dentro de una sentencia.
 
-## Que NO es parte de esta entrega
+## Alcance de esta entrega
 
-Microservicios, aplicacion movil, aplicacion de escritorio, JWT, respuestas XML,
-Locust, Google Cloud Storage y despliegue automatizado. Todo eso corresponde al
-segundo y tercer parcial. El monolito se diseno para poder partirse despues
-(capas separadas, health check, correlation id), pero **no se parte ahora**.
-
-MongoDB esta contemplado en el diseno (`inspecciones_ref.mongo_doc_id` existe y
-queda en NULL) pero no se usa en esta entrega.
+Incluye el web ampliado, ocho microservicios, JWT, JSON/XML, PostgreSQL,
+MongoDB, Redis, Swagger y Docker Compose. No incluye aplicaciones Android ni
+de escritorio. Los contratos para esos clientes si deben quedar implementados.
 
 ## Estructura del repositorio
 
