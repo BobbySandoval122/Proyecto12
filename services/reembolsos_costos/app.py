@@ -6,12 +6,20 @@ from flask import Blueprint, Flask, g, request
 from shared import docs, respuestas
 from shared.infra import PREFIJO, cerrar_conexion, consultar, ejecutar, get_redis, registrar_bitacora, salud_postgres, salud_redis
 from shared.respuestas import ErrorApi, leer_cuerpo, responder
-from shared.seguridad import ANALISTA, ENCARGADO_REEMBOLSOS, requiere_jwt
+from shared.seguridad import (ANALISTA, COORDINADOR, ENCARGADO_CENTRO,
+                              ENCARGADO_REEMBOLSOS, INSPECTOR, requiere_jwt)
 
 NOMBRE="reembolsos-costos"; CONTRATOS=os.path.join(os.path.dirname(__file__),"contratos")
 api=Blueprint("reembolsos_costos",__name__,url_prefix="/api/v1/reembolsos-costos")
 METODOS={"transferencia","tarjeta","efectivo","vale"}; ESTADOS={"aprobado","rechazado"}
 ETAPAS={"transporte","inspeccion","almacenamiento","reacondicionamiento","destruccion","reembolso","otros"}
+ETAPAS_POR_ROL={
+    COORDINADOR:{"transporte"},
+    ENCARGADO_CENTRO:{"almacenamiento"},
+    INSPECTOR:{"inspeccion"},
+    ANALISTA:{"reacondicionamiento","destruccion","otros"},
+    ENCARGADO_REEMBOLSOS:{"reembolso"},
+}
 
 def _decimal(datos,campo):
     try: valor=Decimal(str(datos.get(campo))).quantize(Decimal("0.01"))
@@ -61,7 +69,7 @@ def listar_reembolsos():
       FROM reembolsos rb JOIN devoluciones d ON d.id=rb.devolucion_id JOIN usuarios u ON u.id=rb.encargado_id WHERE rb.eliminado_en IS NULL ORDER BY rb.id DESC LIMIT 100""")})
 
 @api.post("/costos")
-@requiere_jwt(ENCARGADO_REEMBOLSOS,ANALISTA)
+@requiere_jwt(COORDINADOR,ENCARGADO_CENTRO,INSPECTOR,ANALISTA,ENCARGADO_REEMBOLSOS)
 def registrar_costo():
     datos=leer_cuerpo(os.path.join(CONTRATOS,"costo.xsd"))
     try: dev_id=int(datos.get("devolucion_id"))
@@ -69,6 +77,8 @@ def registrar_costo():
     if dev_id < 1: raise ErrorApi(400,"validacion","devolucion_id debe ser entero positivo.")
     etapa=str(datos.get("etapa") or "").strip(); monto=_decimal(datos,"monto")
     if etapa not in ETAPAS: raise ErrorApi(400,"validacion","Etapa de costo invalida.")
+    if etapa not in ETAPAS_POR_ROL.get(g.usuario["rol"],set()):
+        raise ErrorApi(403,"sin_permiso","Tu rol no puede registrar costos de esta etapa.")
     _devolucion(dev_id)
     nuevo=ejecutar("INSERT INTO costos(devolucion_id,etapa,monto) VALUES(%s,%s,%s) RETURNING id,devolucion_id,etapa,monto,fecha",(dev_id,etapa,monto),devolver=True)
     registrar_bitacora("costo_registrado","devoluciones",dev_id,f"{etapa}: {monto}"); return responder(nuevo,201)

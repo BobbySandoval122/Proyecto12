@@ -31,5 +31,8 @@ class PruebaReembolsos(unittest.TestCase):
     def test_xml_invalido(self):
         r=self.cliente.post("/api/v1/reembolsos-costos/costos",headers={"Authorization":"Bearer "+self.token(seguridad.ANALISTA),"Content-Type":"application/xml","Accept":"application/xml"},data="<costo><devolucion_id>1</devolucion_id><etapa>inventada</etapa><monto>1</monto></costo>")
         self.assertEqual(r.status_code,400); self.assertIn(b"xml_no_cumple_xsd",r.data)
+    def test_etapas_separadas_por_responsabilidad(self):
+        self.assertEqual(servicio.ETAPAS_POR_ROL[seguridad.COORDINADOR],{"transporte"})
+        self.assertNotIn("reembolso",servicio.ETAPAS_POR_ROL[seguridad.ANALISTA])
 
 if __name__=="__main__": unittest.main()

@@ -46,3 +46,20 @@ sin cambios como respaldo adicional.
 No existe fallback silencioso: si una API falla en modo distribuido, la web
 muestra el error y no repite la escritura directamente en la base, evitando
 duplicados y ocultamiento de fallas durante la demostracion.
+
+## Verificacion E2E en la VM
+
+El 21 de octubre de 2026 se ejecuto desde formularios web el caso
+`DEV-2026-0033`:
+
+1. login de cliente por `auth`;
+2. alta y autorizacion por `devoluciones`;
+3. programacion, asignacion, transito, entrega y recepcion por `logistica`;
+4. inspeccion refrigerada por `inspecciones`, con `mongo_doc_id` real;
+5. disposicion a inventario y etiqueta `REC-2026-0033`;
+6. reembolso de 32.24 por `reembolsos-costos`;
+7. cierre automatico de la devolucion y liberacion del lock Redis (`TTL=-2`).
+
+Todos los formularios respondieron con redireccion HTTP 302, cada API registro
+su request 200/201 con usuario y correlation id, y PostgreSQL termino con la
+devolucion en estado `cerrada`.

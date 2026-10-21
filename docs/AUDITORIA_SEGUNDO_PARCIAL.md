@@ -36,12 +36,14 @@ otorga puntos por demostracion real, no solo por archivos presentes.
 
 ## Bloqueadores antes de declarar “todo bien”
 
-1. Levantar en la VM `docker compose up -d --build` y comprobar que las doce
-   unidades queden healthy; localmente no se construyeron imagenes.
+1. **Resuelto el 21 de octubre de 2026:** Compose fue construido en la VM, los
+   nueve endpoints web/servicios respondieron 200 y las dependencias quedaron
+   saludables.
 2. Ejecutar `INTEGRACION=1` para las pruebas distribuidas y crear una suite E2E
    que recorra auth→venta→devolucion→logistica→inspeccion→evidencia→reembolso→Pareto.
-3. Integrar al menos una operacion de negocio del web con la API. El panel de
-   salud prueba comunicacion web→servicios, pero no sustituye un flujo funcional.
+3. **Resuelto en la rama `roberto/integracion-web-microservicios`:** se ejecuto
+   web→auth→ventas/devoluciones→logistica→inspecciones→reembolso y se cerro el
+   caso `DEV-2026-0033`. Ver `docs/INTEGRACION_WEB_MICROSERVICIOS.md`.
 4. Completar Postman por **cada endpoint** con 2xx, validacion 400, 401, 403,
    404 y conflicto 409 cuando corresponda.
 5. Capturar evidencia persistida: filas PostgreSQL, documentos MongoDB, claves
