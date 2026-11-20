@@ -20,6 +20,9 @@ from app.security import (
 
 bp = Blueprint("devoluciones", __name__, url_prefix="/devoluciones")
 
+# Igual que MAX_DESCRIPCION del servicio de devoluciones (paridad RNF-27).
+MAX_DESCRIPCION = 2000
+
 # Estados desde los que el analista todavia puede resolver la solicitud (RF-10).
 ESTADOS_REVISABLES = ("solicitada", "en_revision")
 
@@ -191,6 +194,15 @@ def nueva():
             errores.append("Selecciona un motivo.")
         if len(descripcion) < 10:
             errores.append("Describe el problema con al menos 10 caracteres.")
+        # Mismos limites que services/devoluciones/reglas.py. La prueba de
+        # paridad (app/tests/test_paridad.py) encontro que el monolito aceptaba
+        # mas de 2000 caracteres y fallaba con 500 ante un motivo inexistente.
+        elif len(descripcion) > MAX_DESCRIPCION:
+            errores.append(f"La descripcion no puede pasar de {MAX_DESCRIPCION} caracteres.")
+        if motivo_id and not consultar(
+                "SELECT 1 FROM motivos WHERE id = %s AND activo = TRUE", (motivo_id,), uno=True):
+            errores.append("El motivo no existe o esta inactivo.")
+            motivo_id = None
         if cantidad < 1 or cantidad > disponible:
             errores.append(f"La cantidad debe estar entre 1 y {disponible}.")
         # RN-16: misma politica (tabla politicas_devolucion) que el servicio de
