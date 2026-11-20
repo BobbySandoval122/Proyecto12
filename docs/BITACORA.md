@@ -680,3 +680,31 @@ quedo guardada. No cambia nada para los demas servicios.
 
 **Pruebas en la VM:** 24 unitarias y 9 de integracion, todas pasan.
 
+## 2026-11-20 — Servicio de integraciones y monitoreo (dominios 21 y 22, puerto 8021)
+
+**Por que un solo contenedor.** La propuesta de puertos (`docs/PUERTOS.md`)
+agrupa integraciones (21) y monitoreo (22) en 8021: los dos miran a toda la
+plataforma desde afuera y ninguno es dueno de datos del negocio.
+
+**Integraciones.** La tabla `integraciones_ids` (migracion 018) guarda la
+equivalencia entre ids externos (POS, ERP, WMS, transportista, financiero) e
+internos. Su llave (sistema, tipo, id_externo) hace idempotente la importacion:
+el mismo ticket del POS dos veces es la misma venta; dos envios simultaneos se
+ordenan con un candado de PostgreSQL (`pg_advisory_xact_lock`) y solo uno crea.
+Un id sin equivalencia responde `422 sin_conciliar` en lugar de adivinar. La
+exportacion para ERP y finanzas incluye reembolso, costo total y los ids
+externos. El transportista reporta el avance con su guia; reenviar el evento no
+cambia nada.
+
+**Monitoreo.** Un hilo revisa cada 60 s el `/health` de los diez servicios, las
+tres bases y la cola de sincronizacion; un candado en Redis evita que los dos
+workers de gunicorn revisen a la vez. Los chequeos van a MongoDB (se borran a
+los 7 dias) y de ahi salen disponibilidad, tiempo promedio y p95. Las alertas
+(servicio caido o degradado, respuesta lenta, base caida, demasiados conflictos
+offline) se abren una sola vez por problema y se resuelven solas. La traza junta
+bitacora y eventos de todos los servicios con el mismo `X-Correlation-ID`.
+
+**Pruebas en la VM:** 19 unitarias y 8 de integracion, todas pasan. El primer
+chequeo automatico quedo guardado un minuto despues de arrancar, con los diez
+servicios en `ok` y sin alertas activas.
+
