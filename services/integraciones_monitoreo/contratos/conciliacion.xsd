@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Equivalencia entre un id externo y uno interno (POST /api/v1/integraciones/conciliaciones). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="IdExterno"><xs:restriction base="xs:string"><xs:pattern value="[A-Za-z0-9_.:/\-]{1,64}"/></xs:restriction></xs:simpleType>
+  <xs:element name="conciliacion">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="sistema"><xs:simpleType><xs:restriction base="xs:string">
+          <xs:enumeration value="pos"/><xs:enumeration value="erp"/><xs:enumeration value="wms"/>
+          <xs:enumeration value="transportista"/><xs:enumeration value="financiero"/>
+        </xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="tipo_entidad"><xs:simpleType><xs:restriction base="xs:string">
+          <xs:enumeration value="tienda"/><xs:enumeration value="venta"/><xs:enumeration value="producto"/>
+          <xs:enumeration value="devolucion"/><xs:enumeration value="recoleccion"/>
+        </xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="id_externo" type="IdExterno"/>
+        <xs:element name="id_interno" type="xs:positiveInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
