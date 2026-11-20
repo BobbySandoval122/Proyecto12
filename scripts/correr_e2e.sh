@@ -69,6 +69,13 @@ if [ "$MODO" = "todo" ] || [ "$MODO" = "e2e" ]; then
     -e INTEGRACION=1 devoluciones python -m pytest -v -s -p no:cacheprovider tests/e2e
 fi
 
+if [ "$MODO" = "todo" ] || [ "$MODO" = "paridad" ]; then
+  # Monolito vs distribuido: misma decision por la web (dos modos) y por la API.
+  # El contenedor de la web no trae pytest; la prueba usa unittest.
+  correr docker compose exec -T -e INTEGRACION=1 app sh -c \
+    "cd apps/web && PYTHONPATH=/srv/app:. python -m unittest -v app.tests.test_paridad"
+fi
+
 if [ "$MODO" = "todo" ] || [ "$MODO" = "servicios" ]; then
   for servicio in auth ventas-catalogos devoluciones evidencias logistica \
                   inspecciones reembolsos-costos analisis-auditoria sincronizacion \
@@ -80,7 +87,7 @@ fi
 
 echo | tee -a "$SALIDA"
 echo "=== Resumen ===" | tee -a "$SALIDA"
-grep -E "^(=== |=+ .*(passed|failed|error|skipped).* =+$)" "$SALIDA" | grep -v "=== Resumen" | tee -a "$SALIDA.resumen" > /dev/null
+grep -E "^(=== |=+ .*(passed|failed|error|skipped).* =+$|Ran [0-9]+ tests|OK$|FAILED \\()" "$SALIDA" | grep -v "=== Resumen" | tee -a "$SALIDA.resumen" > /dev/null
 cat "$SALIDA.resumen" >> "$SALIDA"; rm -f "$SALIDA.resumen"
 echo "Bloques con fallos: $fallos" | tee -a "$SALIDA"
 echo
