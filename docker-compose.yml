@@ -258,6 +258,29 @@ services:
       timeout: 5s
       retries: 3
 
+  integraciones-monitoreo:
+    # Tercer parcial, dominios 21 y 22: integraciones con POS, ERP, WMS,
+    # transportistas y finanzas, y monitoreo de toda la plataforma. Revisa la
+    # salud de todos los servicios cada MONITOREO_INTERVALO_SEG segundos.
+    build:
+      context: .
+      dockerfile: services/integraciones_monitoreo/Dockerfile
+    container_name: devoluciones_integraciones_monitoreo
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    environment:
+      MONITOREO_INTERVALO_SEG: "60"
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+    ports: ["0.0.0.0:8021:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:

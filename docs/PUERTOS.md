@@ -29,8 +29,8 @@ nuevos.
 | 8014 | disposicion-inventario | 14 disposicion + 15 inventario inverso | nuevo |
 | 8017 | notificaciones | 17 notificaciones | nuevo |
 | 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | nuevo |
-| 8020 | sincronizacion | 20 sincronizacion offline | **implementado** (rama `david/sincronizacion`) |
-| 8021 | integraciones-monitoreo | 21 integraciones + 22 monitoreo | nuevo |
+| 8020 | sincronizacion | 20 sincronizacion offline | **implementado** |
+| 8021 | integraciones-monitoreo | 21 integraciones + 22 monitoreo | **implementado** |
 
 Los puertos 8009, 8012, 8015, 8016, 8019 y 8022 quedan **libres a proposito**:
 corresponden a dominios agrupados en otro contenedor. Conservar la numeracion de
