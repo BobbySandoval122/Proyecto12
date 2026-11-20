@@ -1,0 +1,27 @@
+Prueba de paridad monolito / distribuido / API (apps/web/app/tests/test_paridad.py)
+VM maquina01, 2026-11-20, rama david/monolitico-distribuido
+
+--- Corrida 1 (commit cd49fbb): 6 de 8 casos iguales, 2 diferencias ---
+Caso                             web monolitica     web distribuida    api directa
+valida                           aceptada           aceptada           aceptada
+duplicada (RN-16)                duplicada          duplicada          duplicada
+fuera de plazo (RN-16)           fuera_de_plazo     fuera_de_plazo     fuera_de_plazo
+cantidad excedida (RF-07)        cantidad           cantidad           cantidad
+descripcion corta                descripcion        descripcion        descripcion
+descripcion > 2000               aceptada           otro_400 (*)       descripcion
+motivo inexistente               error_500          motivo             motivo
+compra ajena (RN-13)             ajena              ajena              ajena
+(*) la API la rechazo, pero la web mostro el mensaje generico "Datos de la devolucion incompletos."
+FAILED (failures=2)
+
+--- Corrida 2 (commit 0e628ab, con la correccion de la web): 8 de 8 iguales ---
+Caso                             web monolitica     web distribuida    api directa
+valida                           aceptada           aceptada           aceptada
+duplicada (RN-16)                duplicada          duplicada          duplicada
+fuera de plazo (RN-16)           fuera_de_plazo     fuera_de_plazo     fuera_de_plazo
+cantidad excedida (RF-07)        cantidad           cantidad           cantidad
+descripcion corta                descripcion        descripcion        descripcion
+descripcion > 2000               descripcion        descripcion        descripcion
+motivo inexistente               motivo             motivo             motivo
+compra ajena (RN-13)             ajena              ajena              ajena
+Ran 8 tests - OK
