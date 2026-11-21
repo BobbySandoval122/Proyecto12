@@ -369,6 +369,131 @@ def backfill_fecha_cierre(cur):
     return cur.rowcount
 
 
+LOTE_PROBLEMATICO = "L-2026-PROB-01"
+
+
+def crear_lote_problematico(cur, usuarios, clientes):
+    """Lote refrigerado con devoluciones recurrentes, para la demo de causa raiz.
+
+    La demo del tercer parcial pide "un lote con problemas recurrentes": 12
+    ventas de 8 unidades del mismo lote de leche; 9 de ellas regresan 2
+    unidades cada una (18 de 96, 18.75 %), casi todas por cadena de frio rota y
+    6 de las 9 en Tienda Centro por la ruta Centro -> Centro de Devoluciones.
+    Asi las tasas por lote, tienda y ruta senalan el mismo patron.
+
+    No usa random (no altera los datos reproducibles del resto del seed) y es
+    idempotente: si el lote ya existe no hace nada. Las series PROB01-#### se
+    ligan a las lineas de venta (migracion 040). Trazabilidad: RF-23, RF-24.
+    """
+    cur.execute("SELECT 1 FROM lotes l JOIN productos p ON p.id = l.producto_id "
+                "WHERE l.numero_lote = %s AND p.sku = 'LAC-001'", (LOTE_PROBLEMATICO,))
+    if cur.fetchone():
+        return 0
+    cur.execute("SELECT id, proveedor_id FROM productos WHERE sku = 'LAC-001'")
+    producto = cur.fetchone()
+    cur.execute("SELECT id FROM motivos WHERE nombre = 'Cadena de frio rota'")
+    frio = cur.fetchone()
+    cur.execute("SELECT id FROM motivos WHERE nombre = 'Producto danado'")
+    danado = cur.fetchone()
+    cur.execute("SELECT id, nombre FROM tiendas ORDER BY id")
+    tiendas = cur.fetchall()
+    if not (producto and frio and danado and len(tiendas) >= 3):
+        return 0
+    cur.execute("SELECT id FROM rutas WHERE origen = %s ORDER BY id LIMIT 1",
+                (tiendas[0]["nombre"],))
+    ruta = cur.fetchone()
+    cur.execute("SELECT id FROM transportistas ORDER BY id LIMIT 1")
+    transportista = cur.fetchone()
+
+    cur.execute(
+        """INSERT INTO lotes (producto_id, proveedor_id, numero_lote,
+                              fecha_fabricacion, fecha_caducidad)
+           VALUES (%s, %s, %s, '2026-09-20', '2026-11-30') RETURNING id""",
+        (producto["id"], producto["proveedor_id"], LOTE_PROBLEMATICO),
+    )
+    lote_id = cur.fetchone()["id"]
+
+    analista = usuarios["josue.analista@demo.mx"]
+    inspector = usuarios["valentina.inspector@demo.mx"]
+    encargado = usuarios["roberto.centro@demo.mx"]
+    coordinador = usuarios["david.logistica@demo.mx"]
+    # Ventas 1-6 en Tienda Centro, 7-9 en Valle Oriente, 10-12 en Cumbres (sin devolucion).
+    tienda_de = [0] * 6 + [1] * 3 + [2] * 3
+    # Estado de las 9 devoluciones: tres cerradas, tres en inspeccion, tres autorizadas.
+    estados = ["cerrada"] * 3 + ["en_inspeccion"] * 3 + ["autorizada"] * 3
+    serie = 0
+    for n in range(12):
+        cur.execute(
+            """INSERT INTO ventas (folio_venta, cliente_id, tienda_id, fecha_venta)
+               VALUES (%s, %s, %s, %s) RETURNING id""",
+            (f"VTA-PROB-{n + 1:02d}", clientes[n % len(clientes)],
+             tiendas[tienda_de[n]]["id"], date(2026, 10, 1) + timedelta(days=n)),
+        )
+        venta_id = cur.fetchone()["id"]
+        cur.execute(
+            """INSERT INTO venta_detalle (venta_id, lote_id, cantidad, precio_unitario)
+               VALUES (%s, %s, 8, 32.50) RETURNING id""",
+            (venta_id, lote_id),
+        )
+        detalle_id = cur.fetchone()["id"]
+        for _ in range(8):
+            serie += 1
+            cur.execute(
+                """INSERT INTO series_producto (lote_id, numero_serie, venta_detalle_id)
+                   VALUES (%s, %s, %s)""",
+                (lote_id, f"PROB01-{serie:04d}", detalle_id),
+            )
+        if n >= 9:
+            continue
+        estado = estados[n]
+        motivo = danado["id"] if n in (2, 7) else frio["id"]
+        cur.execute(
+            """INSERT INTO devoluciones (venta_detalle_id, motivo_id, descripcion_problema,
+                                         cantidad_devuelta, estado, analista_id,
+                                         fecha_solicitud, fecha_autorizacion)
+               VALUES (%s, %s, %s, 2, %s, %s, %s, %s) RETURNING id, folio_devolucion""",
+            (detalle_id, motivo,
+             "El producto llego tibio y con mal olor." if motivo == frio["id"]
+             else "El empaque llego abollado y con fuga.",
+             estado, analista,
+             date(2026, 10, 3) + timedelta(days=n), date(2026, 10, 4) + timedelta(days=n)),
+        )
+        dev = cur.fetchone()
+        cur.execute(
+            """INSERT INTO bitacora (usuario_id, accion, entidad, entidad_id, detalle, correlation_id)
+               VALUES (NULL, 'alta_devolucion', 'devoluciones', %s, %s, 'seed-demo')""",
+            (dev["id"], f"Devolucion {dev['folio_devolucion']} del lote {LOTE_PROBLEMATICO} (demostracion)"),
+        )
+        if estado == "autorizada":
+            continue
+        cur.execute(
+            """INSERT INTO recolecciones (devolucion_id, fecha_programada, lugar, ruta_id,
+                                          transportista_id, coordinador_id, estado)
+               VALUES (%s, %s, 'Domicilio del cliente', %s, %s, %s, 'completada')""",
+            (dev["id"], date(2026, 10, 6) + timedelta(days=n),
+             ruta["id"] if ruta else None,
+             transportista["id"] if transportista else None, coordinador),
+        )
+        cur.execute("INSERT INTO costos (devolucion_id, etapa, monto) VALUES (%s, 'transporte', 95)",
+                    (dev["id"],))
+        cur.execute(
+            "INSERT INTO recepciones (devolucion_id, encargado_id, coincide_expediente) "
+            "VALUES (%s, %s, TRUE)", (dev["id"], encargado))
+        cur.execute(
+            """INSERT INTO inspecciones_ref (devolucion_id, inspector_id, resultado_general,
+                                             apto_para_inventario)
+               VALUES (%s, %s, 'no apto: cadena de frio rota', FALSE)""",
+            (dev["id"], inspector))
+        cur.execute("INSERT INTO costos (devolucion_id, etapa, monto) VALUES (%s, 'inspeccion', 45)",
+                    (dev["id"],))
+        if estado == "cerrada":
+            cur.execute(
+                """INSERT INTO disposiciones (devolucion_id, analista_id, destino, justificacion)
+                   VALUES (%s, %s, 'desecho', 'Producto refrigerado fuera de temperatura.')""",
+                (dev["id"], analista))
+    return 12
+
+
 def rotar_passwords(cur, password):
     """Cambia la contrasena de todas las cuentas de demostracion y las desbloquea."""
     nuevo_hash = generate_password_hash(password)
@@ -416,6 +541,10 @@ def main():
             # para registrar devoluciones nuevas dentro del plazo (RN-16).
             recientes = crear_ventas_recientes(cur, clientes)
             print(f"Ventas recientes dentro del plazo de devolucion: {recientes} nuevas.")
+
+            problematico = crear_lote_problematico(cur, usuarios, clientes)
+            if problematico:
+                print(f"Lote problematico {LOTE_PROBLEMATICO}: {problematico} ventas con series y devoluciones.")
 
             actualizadas = backfill_fecha_cierre(cur)
             if actualizadas:
