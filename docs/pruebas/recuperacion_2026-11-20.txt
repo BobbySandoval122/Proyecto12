@@ -1,0 +1,32 @@
+Prueba de recuperacion - 2026-11-20 19:11:11 UTC - commit 0e628ab
+
+1. Se mata el servicio de devoluciones despues de confirmar una solicitud
+  [OK   ] La solicitud se confirma (201)  (respondio 201)
+     folio DEV-2026-0113, id 113
+  [OK   ] Con el servicio muerto, el reintento del cliente no recibe respuesta  (URLError)
+  [OK   ] El servicio vuelve y su /health responde 200
+  [OK   ] La solicitud confirmada sigue ahi  (estado solicitada)
+  [OK   ] El cliente reintenta al volver: 409 solicitud_duplicada  (409 solicitud_duplicada)
+  [OK   ] En PostgreSQL hay exactamente una solicitud  (1)
+
+2. Se mata el servicio de sincronizacion y la app reenvia la misma operacion
+  [OK   ] La operacion offline se acepta  (aceptada)
+  [OK   ] El servicio vuelve y su /health responde 200
+  [OK   ] La app reenvia la misma operacion: repetida, no se aplica otra vez  (aceptada, repetida=True)
+  [OK   ] Una sola evidencia en PostgreSQL; la operacion registra 2 envios  (evidencias=1, envios=2)
+
+3. Se detiene PostgreSQL
+  [OK   ] devoluciones /health responde 503 (degradado), no 200  (503)
+  [OK   ] Una consulta responde error controlado, no datos a medias  (500)
+  [OK   ] El monitoreo detecta PostgreSQL caido  (200)
+  [OK   ] Se abre la alerta base_no_disponible
+  [OK   ] PostgreSQL vuelve y devoluciones responde 200
+  [OK   ] La solicitud confirmada antes de la caida sigue ahi  (200)
+  [OK   ] La alerta se resuelve sola
+
+4. Se reinicia Redis
+  [OK   ] La sesion del usuario sobrevive al reinicio (appendonly)  (200)
+
+Limpieza: se borraron las filas creadas por la prueba.
+
+Resultado: TODO OK

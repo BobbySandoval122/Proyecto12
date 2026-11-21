@@ -708,3 +708,25 @@ bitacora y eventos de todos los servicios con el mismo `X-Correlation-ID`.
 chequeo automatico quedo guardado un minuto despues de arrancar, con los diez
 servicios en `ok` y sin alertas activas.
 
+## 2026-11-20 — Monolitico vs distribuido y prueba de recuperacion
+
+**Paridad.** `apps/web/app/tests/test_paridad.py` manda la misma solicitud por la
+web en modo monolitico, la web en modo distribuido y la API directa, y exige la
+misma decision en ocho casos. En la primera corrida encontro dos diferencias: el
+monolito aceptaba descripciones de mas de 2000 caracteres y respondia 500 con
+un motivo inexistente. Se corrigio la web (`MAX_DESCRIPCION` y validacion del
+motivo activo); la segunda corrida da 8 de 8 iguales. Ambas salidas estan en
+`docs/pruebas/paridad_2026-11-20.txt`.
+
+**Recuperacion.** `scripts/prueba_recuperacion.py` mata devoluciones y
+sincronizacion, detiene PostgreSQL y reinicia Redis. Lo confirmado sigue ahi,
+los reintentos no duplican (409 `solicitud_duplicada`, `repetida: true`), los
+servicios responden 503 en lugar de dejar datos a medias y el monitoreo abre y
+resuelve la alerta de la base. 18 de 18 comprobaciones OK.
+
+**Corrida consolidada.** `scripts/correr_e2e.sh` incluye un bloque `paridad`.
+El contenedor de la web no trae pytest, asi que la prueba usa unittest.
+
+**Documento.** `docs/MONOLITICO_VS_DISTRIBUIDO.md`: donde vive cada regla en los
+dos modos y por que la caida de una API no duplica operaciones.
+
