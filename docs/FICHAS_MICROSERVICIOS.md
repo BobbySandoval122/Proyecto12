@@ -106,3 +106,15 @@ Para cada operacion se debe anexar: URL/metodo, objetivo, parametros, headers,
 body JSON o XML, respuesta completa, codigo HTTP, captura Swagger/Postman,
 efecto en PostgreSQL/MongoDB/Redis y al menos un error controlado. El codigo y
 esta ficha no sustituyen esas ejecuciones.
+
+## 10. clasificacion-motivos — puerto 8010
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Clasificar el origen de la falla en categorias y submotivos, con versiones y revision humana de la sugerencia automatica. |
+| Justificacion | RF-22, RN-09, RN-11, RN-12. El analisis de causa raiz necesita saber si la falla fue del producto, del empaque, del transporte, comercial o de mal uso; el catalogo plano `motivos` no lo distingue. |
+| Persistencia | PostgreSQL: `categorias_motivo`, `submotivos`, `submotivos_versiones`, `clasificaciones_motivo` (migracion 041); sesion y limite de uso en Redis. |
+| Endpoints | `GET /categorias`, `GET/POST /submotivos`, `GET/PUT /submotivos/{id}`, `PATCH /submotivos/{id}/estado`, `POST /sugerencias`, `GET/POST /clasificaciones`, `POST /clasificaciones/{id}/revision`, todos bajo `/api/v1/motivos`. |
+| Reglas | Cada edicion crea una version y exige explicar el cambio; la sugerencia nunca modifica la devolucion; una sola sugerencia pendiente por devolucion; corregir o descartar exige comentario; una clasificacion revisada no se revisa otra vez. |
+| Roles | Lectura del catalogo: roles internos. Alta y edicion: Administrador y Supervisor. Revision: Analista, Supervisor y Administrador. `POST /sugerencias` lo puede usar cualquier rol (30 por minuto) y no revela las palabras clave. |
+| Despliegue/pruebas | `services/clasificacion_motivos/Dockerfile`, Compose `clasificacion-motivos`; 53 pruebas que corren sin base y `test_integracion.py` en la VM. El `clasificar-motivo` de `analisis-auditoria` (8008) sigue vigente hasta separar la auditoria. |

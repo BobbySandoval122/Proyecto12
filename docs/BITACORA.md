@@ -730,3 +730,29 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 **Documento.** `docs/MONOLITICO_VS_DISTRIBUIDO.md`: donde vive cada regla en los
 dos modos y por que la caida de una API no duplica operaciones.
 
+
+## 2026-11-21 — Clasificacion de motivos (Persona 4, dominio 10)
+
+**Decision.** Servicio propio en el puerto 8010 con cinco categorias de origen
+y doce submotivos iniciales que viven en la migracion 041 (son parte del
+contrato, como los roles de la 008). Cada submotivo apunta a un motivo del
+catalogo existente sin reemplazarlo, asi las devoluciones registradas siguen
+validas y el analisis puede agrupar por origen.
+
+**Versiones.** Cada cambio (incluido activar o desactivar) sube `version` y
+guarda una copia en `submotivos_versiones`, que nunca se edita. Se exige el
+motivo del cambio. Cada clasificacion revisada guarda la version con la que se
+decidio. `PUT` con los mismos datos no crea version: responde `sin_cambios`.
+
+**Revision humana (RN-11).** La sugerencia por palabras clave se guarda como
+`pendiente`; solo una persona la confirma, corrige o descarta, y el servicio no
+toca la devolucion. Una restriccion de la base impide una clasificacion
+definitiva sin responsable. Una palabra coincide solo al inicio de una palabra
+del texto (`caduc` si coincide con `caducado`; `sol` no con `solo`), porque el
+primer intento por fragmentos daba sugerencias absurdas.
+
+**Cliente.** Puede pedir una sugerencia de texto para su formulario, pero la
+respuesta omite las palabras clave y esta limitada a 30 por minuto.
+
+**Pendiente.** `analisis-auditoria` conserva su `clasificar-motivo`; se retira
+al separar la auditoria (bloque final del plan de Persona 4).
