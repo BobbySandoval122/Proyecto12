@@ -112,7 +112,7 @@ class Corrida:
 
     def valor(self, sql):
         """Primer dato de una consulta (la salida de psql trae el encabezado en la primera linea); None si no hay filas."""
-        lineas = self.sql(sql).splitlines()
+        lineas = self.sql(sql.format(**self.ctx)).splitlines()   # igual que caso(): {variable} sale del contexto
         return lineas[1].strip() if len(lineas) > 1 else None
 
     def password(self):

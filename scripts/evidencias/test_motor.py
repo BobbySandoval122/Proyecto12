@@ -280,3 +280,13 @@ def test_una_corrida_interrumpida_lo_dice_en_el_documento(corrida):
     md = corrida.markdown(interrupcion="KeyError: 'sub_id'")
     assert "CORRIDA INTERRUMPIDA** tras el caso 1" in md and "KeyError: 'sub_id'" in md
     assert "CORRIDA INTERRUMPIDA" not in corrida.markdown()
+
+
+def test_valor_completa_las_variables_del_contexto_como_caso(puerto):
+    """Regresion: valor() mandaba '{dev_id}' sin sustituir y PostgreSQL respondia error de sintaxis."""
+    recibidas = []
+    c = motor.Corrida("s", "S", "S", puerto, puerto_auth=puerto, password=PASSWORD,
+                      ejecutar_sql=lambda sql: recibidas.append(sql) or "x\n7")
+    c.ctx["dev_id"] = 41
+    assert c.valor("SELECT estado FROM devoluciones WHERE id = {dev_id}") == "7"
+    assert recibidas == ["SELECT estado FROM devoluciones WHERE id = 41"]
