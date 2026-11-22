@@ -1,7 +1,7 @@
 # Evidencia con curl - `analisis-auditoria`
 
-Ejecutada en la VM el 2026-11-22 18:26 UTC con `scripts/evidencias/ejecutar.py auditoria` (commit `e476cf1`).
-Casos: **31**, correctos: **31**, con falla: **0**. Los tokens y la contrasena de demo estan ocultos; la IP de la VM se muestra como `$VM_HOST`.
+Ejecutada en la VM el 2026-11-22 18:52 UTC con `scripts/evidencias/ejecutar.py auditoria` (commit `373321c`).
+Casos: **32**, correctos: **32**, con falla: **0**. Los tokens y la contrasena de demo estan ocultos; la IP de la VM se muestra como `$VM_HOST`.
 
 Cada respuesta es la que devolvio el servicio: nada se pego a mano. Un caso que no cumple lo esperado queda marcado como falla, no se omite.
 
@@ -49,18 +49,19 @@ El login admite 10 intentos por minuto por IP (RNF-13); el token dura 15 minutos
 | [P4-AUD-23](#p4-aud-23) | correcto | 200 | eventos 200 por servicio |
 | [P4-AUD-24](#p4-aud-24) | correcto | 200 | eventos 200 XML |
 | [P4-AUD-25](#p4-aud-25) | correcto | 400 | eventos 400 filtro demasiado largo |
-| [P4-AUD-26](#p4-aud-26) | correcto | 200 | obsoleta: alertas de fraude |
-| [P4-AUD-27](#p4-aud-27) | correcto | 200 | obsoleta: clasificar motivo |
-| [P4-AUD-28](#p4-aud-28) | correcto | 400 | obsoleta: clasificar motivo 400 |
-| [P4-AUD-29](#p4-aud-29) | correcto | 200 | obsoleta: alias de eventos |
-| [P4-AUD-30](#p4-aud-30) | correcto | 200 | obsoleta: resumen sin sucesor |
-| [P4-AUD-31](#p4-aud-31) | correcto | 403 | obsoleta: cliente no ve alertas de fraude |
+| [P4-AUD-26](#p4-aud-26) | correcto | 410 | retirada: clasificar motivo |
+| [P4-AUD-27](#p4-aud-27) | correcto | 410 | retirada: alertas de fraude |
+| [P4-AUD-28](#p4-aud-28) | correcto | 410 | retirada: Pareto |
+| [P4-AUD-29](#p4-aud-29) | correcto | 410 | retirada: sincronizar |
+| [P4-AUD-30](#p4-aud-30) | correcto | 410 | retirada: resumen |
+| [P4-AUD-31](#p4-aud-31) | correcto | 410 | retirada: alias de eventos |
+| [P4-AUD-32](#p4-aud-32) | correcto | 200 | la auditoria sigue en pie tras el corte |
 
 ## P4-AUD-01
 
 **salud 200 con las tres dependencias**
 
-Objetivo: El servicio informa PostgreSQL, Redis y MongoDB, y que el analisis esta obsoleto (RF-32).
+Objetivo: El servicio informa PostgreSQL, Redis y MongoDB, y que el analisis esta retirado (RF-32).
 
 Comando:
 
@@ -69,12 +70,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/health" \
   -H "Accept: application/json"
 ```
 
-Respuesta - **200 OK** (19 ms, 208 bytes):
+Respuesta - **200 OK** (20 ms, 208 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 208
-X-Correlation-ID: f8b7cfd365fc47c0
+X-Correlation-ID: e097bf5a1a9a49d3
 ```
 
 ```json
@@ -96,7 +97,7 @@ X-Correlation-ID: f8b7cfd365fc47c0
       "error": null
     }
   },
-  "analisis": "obsoleto"
+  "analisis": "retirado"
 }
 ```
 
@@ -105,7 +106,7 @@ Verificaciones:
 - ok: HTTP 200
 - ok: estado ok
 - ok: MongoDB ok
-- ok: analisis obsoleto
+- ok: analisis retirado
 
 ## P4-AUD-02
 
@@ -125,7 +126,7 @@ Respuesta - **200 OK** (10 ms, 482 bytes):
 ```http
 Content-Type: text/html; charset=utf-8
 Content-Length: 482
-X-Correlation-ID: 82cbe43295944f4e
+X-Correlation-ID: f248d6c6d4a14ad8
 ```
 
 ```text
@@ -157,12 +158,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/openapi.json" \
   -H "Accept: application/json"
 ```
 
-Respuesta - **200 OK** (11 ms, 11452 bytes):
+Respuesta - **200 OK** (10 ms, 11452 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 11452
-X-Correlation-ID: 146e90f0dedd4c4e
+X-Correlation-ID: 3e12b3b458aa4955
 ```
 
 ```json
@@ -258,12 +259,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria" \
   -H "Accept: application/json"
 ```
 
-Respuesta - **401 UNAUTHORIZED** (9 ms, 162 bytes):
+Respuesta - **401 UNAUTHORIZED** (10 ms, 162 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 162
-X-Correlation-ID: 582504dd067f46a0
+X-Correlation-ID: 62892beda9594b12
 ```
 
 ```json
@@ -273,7 +274,7 @@ X-Correlation-ID: 582504dd067f46a0
     "tipo": "no_autenticado",
     "mensaje": "Falta el header 'Authorization: Bearer <token>'.",
     "detalles": null,
-    "correlation_id": "582504dd067f46a0"
+    "correlation_id": "62892beda9594b12"
   }
 }
 ```
@@ -297,12 +298,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria" \
   -H "Authorization: Bearer no.es.un.jwt"
 ```
 
-Respuesta - **401 UNAUTHORIZED** (9 ms, 136 bytes):
+Respuesta - **401 UNAUTHORIZED** (10 ms, 136 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 136
-X-Correlation-ID: d3a6f3e165e1429b
+X-Correlation-ID: 5544d186dd264a2e
 ```
 
 ```json
@@ -312,7 +313,7 @@ X-Correlation-ID: d3a6f3e165e1429b
     "tipo": "token_invalido",
     "mensaje": "El token no es valido.",
     "detalles": null,
-    "correlation_id": "d3a6f3e165e1429b"
+    "correlation_id": "5544d186dd264a2e"
   }
 }
 ```
@@ -336,12 +337,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria" \
   -H "Authorization: Bearer $TOKEN_CLIENTE"
 ```
 
-Respuesta - **403 FORBIDDEN** (12 ms, 232 bytes):
+Respuesta - **403 FORBIDDEN** (10 ms, 232 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 232
-X-Correlation-ID: 2f8142ba8900475d
+X-Correlation-ID: 604735c260f345b3
 ```
 
 ```json
@@ -357,7 +358,7 @@ X-Correlation-ID: 2f8142ba8900475d
         "Analista de Devoluciones"
       ]
     },
-    "correlation_id": "2f8142ba8900475d"
+    "correlation_id": "604735c260f345b3"
   }
 }
 ```
@@ -381,12 +382,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/estado" \
   -H "Authorization: Bearer $TOKEN_SUPERVISOR"
 ```
 
-Respuesta - **403 FORBIDDEN** (17 ms, 235 bytes):
+Respuesta - **403 FORBIDDEN** (10 ms, 235 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 235
-X-Correlation-ID: 773f4f6db4fc438b
+X-Correlation-ID: aefb4e72c9764109
 ```
 
 ```json
@@ -402,7 +403,7 @@ X-Correlation-ID: 773f4f6db4fc438b
         "Analista de Devoluciones"
       ]
     },
-    "correlation_id": "773f4f6db4fc438b"
+    "correlation_id": "aefb4e72c9764109"
   }
 }
 ```
@@ -426,85 +427,85 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?por_pagina=10" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (25 ms, 2261 bytes):
+Respuesta - **200 OK** (25 ms, 2436 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 2261
-X-Correlation-ID: 1b6f50b490a84bda
+Content-Length: 2436
+X-Correlation-ID: eb56e74e2eea4b56
 ```
 
 ```json
 {
   "datos": [
     {
-      "id": 1119,
+      "id": 1600,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 18,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "edabe57a92254690",
-      "fecha": "2026-11-22T18:26:43.315534+00:00",
+      "correlation_id": "55b3e5948f0c407f",
+      "fecha": "2026-11-22T18:52:58.541086+00:00",
       "usuario": "Pablo Flores"
     },
     {
-      "id": 1118,
+      "id": 1599,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 40,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "930262e66ae04f5b",
-      "fecha": "2026-11-22T18:26:43.171387+00:00",
+      "correlation_id": "0e0593c406e248d8",
+      "fecha": "2026-11-22T18:52:58.416370+00:00",
       "usuario": "Jorge Salinas"
     },
     {
-      "id": 1117,
+      "id": 1598,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 10,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "33d48afee46840fb",
-      "fecha": "2026-11-22T18:26:43.036747+00:00",
+      "correlation_id": "df89b9036840497d",
+      "fecha": "2026-11-22T18:52:58.288007+00:00",
       "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1116,
-      "accion": "serie_vendida",
-      "entidad": "series_producto",
-      "entidad_id": null,
-      "detalle": "Serie EVID-P4-003 ligada a la linea 62",
-      "correlation_id": "e9782bd3be31418f",
-      "fecha": "2026-11-22T18:24:16.722391+00:00",
+      "id": 1597,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "4196f7d2cf41491f",
+      "fecha": "2026-11-22T18:51:52.355809+00:00",
+      "usuario": "Ana Lopez Garcia"
+    },
+    {
+      "id": 1596,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 18,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "8ea8e8cff5064c09",
+      "fecha": "2026-11-22T18:51:52.342050+00:00",
       "usuario": "Pablo Flores"
     },
     {
-      "id": 1115,
-      "accion": "serie_vendida",
-      "entidad": "series_producto",
-      "entidad_id": null,
-      "detalle": "Serie EVID-P4-001 ligada a la linea 62",
-      "correlation_id": "feac40bef5eb4425",
-      "fecha": "2026-11-22T18:24:16.363218+00:00",
-      "usuario": "Marta Cantu"
-    },
-    {
-      "id": 1114,
-      "accion": "login_api",
+      "id": 1595,
+      "accion": "logout_api",
       "entidad": "usuarios",
-      "entidad_id": 39,
-      "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "dac1181921f54eb3",
-      "fecha": "2026-11-22T18:24:16.184514+00:00",
-      "usuario": "Marta Cantu"
+      "entidad_id": 17,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "05f4441db07a4db1",
+      "fecha": "2026-11-22T18:51:52.328638+00:00",
+      "usuario": "Carla Trevino"
     },
     {
-      "id": 1113,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 1,
-      "detalle": "Series nuevas: 1",
-      "correlation_id": "eb5cccc1f87540f6",
-      "fecha": "2026-11-22T18:24:16.076249+00:00",
+      "id": 1594,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 13,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "ee331f8105e0481a",
+      "fecha": "2026-11-22T18:51:52.315915+00:00",
 ... (recortado: 40 lineas mas)
 ```
 
@@ -524,7 +525,7 @@ SELECT count(*) AS registros FROM bitacora
 
 ```text
 registros
-1119
+1600
 ```
 
 ## P4-AUD-09
@@ -541,17 +542,17 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?por_pagina=3" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (23 ms, 1054 bytes):
+Respuesta - **200 OK** (25 ms, 1054 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
 Content-Length: 1054
-X-Correlation-ID: e06c7c90b13d445e
+X-Correlation-ID: 6ce3a7030d544a2a
 ```
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
-<bitacora><datos><item><id>1120</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>16</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>ad9143068ed84c35</correlation_id><fecha>2026-11-22T18:26:43.618112+00:00</fecha><usuario>Josue Berdeal</usuario></item><item><id>1119</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>18</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>edabe57a92254690</correlation_id><fecha>2026-11-22T18:26:43.315534+00:00</fecha><usuario>Pablo Flores</usuario></item><item><id>1118</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>40</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>930262e66ae04f5b</correlation_id><fecha>2026-11-22T18:26:43.171387+00:00</fecha><usuario>Jorge Salinas</usuario></item></datos><paginacion><pagina>1</pagina><por_pagina>3</por_pagina><total>1120</total><paginas>374</paginas></paginacion></bitacora>
+<bitacora><datos><item><id>1601</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>16</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>865aac8f85294361</correlation_id><fecha>2026-11-22T18:52:58.878389+00:00</fecha><usuario>Josue Berdeal</usuario></item><item><id>1600</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>18</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>55b3e5948f0c407f</correlation_id><fecha>2026-11-22T18:52:58.541086+00:00</fecha><usuario>Pablo Flores</usuario></item><item><id>1599</id><accion>login_api</accion><entidad>usuarios</entidad><entidad_id>40</entidad_id><detalle>Inicio de sesion por API, JWT emitido</detalle><correlation_id>0e0593c406e248d8</correlation_id><fecha>2026-11-22T18:52:58.416370+00:00</fecha><usuario>Jorge Salinas</usuario></item></datos><paginacion><pagina>1</pagina><por_pagina>3</por_pagina><total>1601</total><paginas>534</paginas></paginacion></bitacora>
 ```
 
 Verificaciones:
@@ -569,31 +570,31 @@ Objetivo: Todo lo que dejo una misma peticion, de punta a punta, se sigue con su
 Comando:
 
 ```bash
-curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?correlation_id=e9782bd3be31418f" \
+curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?correlation_id=4196f7d2cf41491f" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (23 ms, 314 bytes):
+Respuesta - **200 OK** (23 ms, 318 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 314
-X-Correlation-ID: 49779b11f46f426a
+Content-Length: 318
+X-Correlation-ID: a8ed7d562d844369
 ```
 
 ```json
 {
   "datos": [
     {
-      "id": 1116,
-      "accion": "serie_vendida",
-      "entidad": "series_producto",
-      "entidad_id": null,
-      "detalle": "Serie EVID-P4-003 ligada a la linea 62",
-      "correlation_id": "e9782bd3be31418f",
-      "fecha": "2026-11-22T18:24:16.722391+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1597,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "4196f7d2cf41491f",
+      "fecha": "2026-11-22T18:51:52.355809+00:00",
+      "usuario": "Ana Lopez Garcia"
     }
   ],
   "paginacion": {
@@ -619,90 +620,90 @@ Objetivo: Lo que hizo una persona.
 Comando:
 
 ```bash
-curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?usuario_id=18&por_pagina=20" \
+curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?usuario_id=10&por_pagina=20" \
   -H "Accept: application/json" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (24 ms, 4446 bytes):
+Respuesta - **200 OK** (22 ms, 4796 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 4446
-X-Correlation-ID: 7c9e4894677540e1
+Content-Length: 4796
+X-Correlation-ID: 8436ae522fe247d5
 ```
 
 ```json
 {
   "datos": [
     {
-      "id": 1119,
+      "id": 1598,
       "accion": "login_api",
       "entidad": "usuarios",
-      "entidad_id": 18,
+      "entidad_id": 10,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "edabe57a92254690",
-      "fecha": "2026-11-22T18:26:43.315534+00:00",
-      "usuario": "Pablo Flores"
+      "correlation_id": "df89b9036840497d",
+      "fecha": "2026-11-22T18:52:58.288007+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1116,
-      "accion": "serie_vendida",
-      "entidad": "series_producto",
-      "entidad_id": null,
-      "detalle": "Serie EVID-P4-003 ligada a la linea 62",
-      "correlation_id": "e9782bd3be31418f",
-      "fecha": "2026-11-22T18:24:16.722391+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1597,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "4196f7d2cf41491f",
+      "fecha": "2026-11-22T18:51:52.355809+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1113,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 1,
-      "detalle": "Series nuevas: 1",
-      "correlation_id": "eb5cccc1f87540f6",
-      "fecha": "2026-11-22T18:24:16.076249+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1560,
+      "accion": "acceso_denegado",
+      "entidad": "devoluciones",
+      "entidad_id": 169,
+      "detalle": "Intento de acceder a una devolucion de otro cliente (API)",
+      "correlation_id": "9ed763f57291418d",
+      "fecha": "2026-11-22T18:51:50.260184+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1112,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 15,
-      "detalle": "Series nuevas: 1",
-      "correlation_id": "06111c8941a442cc",
-      "fecha": "2026-11-22T18:24:16.049812+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1544,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "45af126743284288",
+      "fecha": "2026-11-22T18:51:49.248146+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1111,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 7,
-      "detalle": "Series nuevas: 1",
-      "correlation_id": "ea7f56f0d3e04427",
-      "fecha": "2026-11-22T18:24:15.986938+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1539,
+      "accion": "login_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Inicio de sesion por API, JWT emitido",
+      "correlation_id": "b791caee16864dba",
+      "fecha": "2026-11-22T18:51:48.977993+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1110,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 7,
-      "detalle": "Series nuevas: 0",
-      "correlation_id": "6fad9b66758e4909",
-      "fecha": "2026-11-22T18:24:15.963243+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1531,
+      "accion": "login_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Inicio de sesion por API, JWT emitido",
+      "correlation_id": "34bb2d684e484260",
+      "fecha": "2026-11-22T18:51:47.735221+00:00",
+      "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1109,
-      "accion": "alta_series",
-      "entidad": "lotes",
-      "entidad_id": 7,
-      "detalle": "Series nuevas: 3",
-      "correlation_id": "100209b1c0954f83",
-      "fecha": "2026-11-22T18:24:15.616706+00:00",
+      "id": 1521,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "add4825222bd4e76",
+      "fecha": "2026-11-22T18:51:04.146045+00:00",
 ... (recortado: 140 lineas mas)
 ```
 
@@ -725,17 +726,37 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?entidad=usuarios&accio
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (26 ms, 1275 bytes):
+Respuesta - **200 OK** (24 ms, 1753 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 1275
-X-Correlation-ID: 8176408a97a042f8
+Content-Length: 1753
+X-Correlation-ID: e8829bc62f91434f
 ```
 
 ```json
 {
   "datos": [
+    {
+      "id": 1313,
+      "accion": "autorizacion_operacion",
+      "entidad": "usuarios",
+      "entidad_id": 40,
+      "detalle": "Autorizo cerrar_investigacion sobre 9",
+      "correlation_id": "4190a90480a74cc4",
+      "fecha": "2026-11-22T18:29:59.283348+00:00",
+      "usuario": "Jorge Salinas"
+    },
+    {
+      "id": 1128,
+      "accion": "autorizacion_operacion",
+      "entidad": "usuarios",
+      "entidad_id": 17,
+      "detalle": "Autorizo aprobar_reembolso sobre 999999",
+      "correlation_id": "516a2ebbe3994372",
+      "fecha": "2026-11-22T18:29:02.029354+00:00",
+      "usuario": "Carla Trevino"
+    },
     {
       "id": 1050,
       "accion": "autorizacion_operacion",
@@ -784,16 +805,7 @@ X-Correlation-ID: 8176408a97a042f8
       "detalle": "Autorizo cerrar_investigacion sobre 3",
       "correlation_id": "220bd476e8374577",
       "fecha": "2026-11-22T01:17:15.293117+00:00",
-      "usuario": "Jorge Salinas"
-    }
-  ],
-  "paginacion": {
-    "pagina": 1,
-    "por_pagina": 20,
-    "total": 5,
-    "paginas": 1
-  }
-}
+... (recortado: 10 lineas mas)
 ```
 
 Verificaciones:
@@ -815,73 +827,73 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?desde=2026-01-01&hasta
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (24 ms, 1220 bytes):
+Respuesta - **200 OK** (24 ms, 1224 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 1220
-X-Correlation-ID: 2a2693c3c8644659
+Content-Length: 1224
+X-Correlation-ID: 0783814c635340a5
 ```
 
 ```json
 {
   "datos": [
     {
-      "id": 1120,
+      "id": 1601,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 16,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "ad9143068ed84c35",
-      "fecha": "2026-11-22T18:26:43.618112+00:00",
+      "correlation_id": "865aac8f85294361",
+      "fecha": "2026-11-22T18:52:58.878389+00:00",
       "usuario": "Josue Berdeal"
     },
     {
-      "id": 1119,
+      "id": 1600,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 18,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "edabe57a92254690",
-      "fecha": "2026-11-22T18:26:43.315534+00:00",
+      "correlation_id": "55b3e5948f0c407f",
+      "fecha": "2026-11-22T18:52:58.541086+00:00",
       "usuario": "Pablo Flores"
     },
     {
-      "id": 1118,
+      "id": 1599,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 40,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "930262e66ae04f5b",
-      "fecha": "2026-11-22T18:26:43.171387+00:00",
+      "correlation_id": "0e0593c406e248d8",
+      "fecha": "2026-11-22T18:52:58.416370+00:00",
       "usuario": "Jorge Salinas"
     },
     {
-      "id": 1117,
+      "id": 1598,
       "accion": "login_api",
       "entidad": "usuarios",
       "entidad_id": 10,
       "detalle": "Inicio de sesion por API, JWT emitido",
-      "correlation_id": "33d48afee46840fb",
-      "fecha": "2026-11-22T18:26:43.036747+00:00",
+      "correlation_id": "df89b9036840497d",
+      "fecha": "2026-11-22T18:52:58.288007+00:00",
       "usuario": "Ana Lopez Garcia"
     },
     {
-      "id": 1116,
-      "accion": "serie_vendida",
-      "entidad": "series_producto",
-      "entidad_id": null,
-      "detalle": "Serie EVID-P4-003 ligada a la linea 62",
-      "correlation_id": "e9782bd3be31418f",
-      "fecha": "2026-11-22T18:24:16.722391+00:00",
-      "usuario": "Pablo Flores"
+      "id": 1597,
+      "accion": "logout_api",
+      "entidad": "usuarios",
+      "entidad_id": 10,
+      "detalle": "Cierre de sesion por API: token y sesion revocados",
+      "correlation_id": "4196f7d2cf41491f",
+      "fecha": "2026-11-22T18:51:52.355809+00:00",
+      "usuario": "Ana Lopez Garcia"
     }
   ],
   "paginacion": {
     "pagina": 1,
     "por_pagina": 5,
-    "total": 1120,
-    "paginas": 224
+    "total": 1601,
+    "paginas": 321
   }
 }
 ```
@@ -905,12 +917,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?accion=x%27%20OR%20%27
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (24 ms, 77 bytes):
+Respuesta - **200 OK** (23 ms, 77 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 77
-X-Correlation-ID: 4d2e9ad63b544cc0
+X-Correlation-ID: cfaef1d050e54c05
 ```
 
 ```json
@@ -944,12 +956,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?desde=ayer" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **400 BAD REQUEST** (9 ms, 146 bytes):
+Respuesta - **400 BAD REQUEST** (10 ms, 146 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 146
-X-Correlation-ID: bd898f812f3e4185
+X-Correlation-ID: cb8675ae3cbb4773
 ```
 
 ```json
@@ -959,7 +971,7 @@ X-Correlation-ID: bd898f812f3e4185
     "tipo": "validacion",
     "mensaje": "desde debe tener formato AAAA-MM-DD.",
     "detalles": null,
-    "correlation_id": "bd898f812f3e4185"
+    "correlation_id": "cb8675ae3cbb4773"
   }
 }
 ```
@@ -988,7 +1000,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 145 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 145
-X-Correlation-ID: 19ef62dffc4c4eb5
+X-Correlation-ID: dcb28d20b0334d0e
 ```
 
 ```json
@@ -998,7 +1010,7 @@ X-Correlation-ID: 19ef62dffc4c4eb5
     "tipo": "validacion",
     "mensaje": "hasta no puede ser menor que desde.",
     "detalles": null,
-    "correlation_id": "19ef62dffc4c4eb5"
+    "correlation_id": "dcb28d20b0334d0e"
   }
 }
 ```
@@ -1022,12 +1034,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?usuario_id=abc" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **400 BAD REQUEST** (8 ms, 149 bytes):
+Respuesta - **400 BAD REQUEST** (10 ms, 149 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 149
-X-Correlation-ID: 2f76f0fcab8647c3
+X-Correlation-ID: f6412d7cc1f04f56
 ```
 
 ```json
@@ -1037,7 +1049,7 @@ X-Correlation-ID: 2f76f0fcab8647c3
     "tipo": "validacion",
     "mensaje": "usuario_id debe ser un entero positivo.",
     "detalles": null,
-    "correlation_id": "2f76f0fcab8647c3"
+    "correlation_id": "f6412d7cc1f04f56"
   }
 }
 ```
@@ -1061,12 +1073,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria?accion=aaaaaaaaaaaaaaa
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **400 BAD REQUEST** (8 ms, 140 bytes):
+Respuesta - **400 BAD REQUEST** (11 ms, 140 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 140
-X-Correlation-ID: dad414283def4245
+X-Correlation-ID: 4fb954b5315a4550
 ```
 
 ```json
@@ -1076,7 +1088,7 @@ X-Correlation-ID: dad414283def4245
     "tipo": "validacion",
     "mensaje": "Filtro accion demasiado largo.",
     "detalles": null,
-    "correlation_id": "dad414283def4245"
+    "correlation_id": "4fb954b5315a4550"
   }
 }
 ```
@@ -1102,12 +1114,12 @@ curl -sS -i -X POST "http://$VM_HOST:8008/api/v1/auditoria" \
   -d '{"accion":"falsa","entidad":"x"}'
 ```
 
-Respuesta - **405 METHOD NOT ALLOWED** (8 ms, 167 bytes):
+Respuesta - **405 METHOD NOT ALLOWED** (10 ms, 167 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 167
-X-Correlation-ID: 710e56fd3ead45f3
+X-Correlation-ID: 37100e7383b3493d
 ```
 
 ```json
@@ -1117,7 +1129,7 @@ X-Correlation-ID: 710e56fd3ead45f3
     "tipo": "metodo_no_permitido",
     "mensaje": "The method is not allowed for the requested URL.",
     "detalles": null,
-    "correlation_id": "710e56fd3ead45f3"
+    "correlation_id": "37100e7383b3493d"
   }
 }
 ```
@@ -1148,7 +1160,7 @@ Respuesta - **404 NOT FOUND** (9 ms, 233 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 233
-X-Correlation-ID: be80e9cb44a549c3
+X-Correlation-ID: bb1ef08b233f4b95
 ```
 
 ```json
@@ -1158,7 +1170,7 @@ X-Correlation-ID: be80e9cb44a549c3
     "tipo": "no_encontrado",
     "mensaje": "The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.",
     "detalles": null,
-    "correlation_id": "be80e9cb44a549c3"
+    "correlation_id": "bb1ef08b233f4b95"
   }
 }
 ```
@@ -1182,19 +1194,19 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/estado" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (21 ms, 358 bytes):
+Respuesta - **200 OK** (23 ms, 358 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 358
-X-Correlation-ID: 897460f9cb394453
+X-Correlation-ID: 1ee553c918054e87
 ```
 
 ```json
 {
-  "registros": 1120,
+  "registros": 1601,
   "primero": "2026-09-06T23:20:35.290510+00:00",
-  "ultimo": "2026-11-22T18:26:43.618112+00:00",
+  "ultimo": "2026-11-22T18:52:58.878389+00:00",
   "proteccion": {
     "actualizar_y_borrar_bloqueados": true,
     "vaciar_bloqueado": true,
@@ -1237,63 +1249,63 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/eventos?por_pagina=5" 
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (16 ms, 1010 bytes):
+Respuesta - **200 OK** (13 ms, 1021 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 1010
-X-Correlation-ID: dcda6254141d4ebb
+Content-Length: 1021
+X-Correlation-ID: eea893cbf1984d4e
 ```
 
 ```json
 {
   "datos": [
     {
-      "id": "6adad7550194762f256264d5",
+      "id": "6b0337fab29f09f2d6b3b7cc",
       "servicio": "devoluciones",
       "tipo": "devolucion_registrada",
-      "usuario_id": 10,
-      "correlation_id": "092b43ba39ff4b37",
-      "fecha": "2026-10-23T03:41:09.495000+00:00"
+      "usuario_id": 11,
+      "correlation_id": "6646b2aace514c2c",
+      "fecha": "2026-11-22T18:44:10.938000+00:00"
     },
     {
-      "id": "6adab3ea0194762f256264d4",
-      "servicio": "devoluciones",
-      "tipo": "devolucion_autorizacion",
-      "usuario_id": 16,
-      "correlation_id": "1ffadf89fd364d1d",
-      "fecha": "2026-10-23T01:10:02.439000+00:00"
-    },
-    {
-      "id": "6adab3c00194762f256264d3",
+      "id": "6b0337fa39e349dccf13fbe1",
       "servicio": "devoluciones",
       "tipo": "devolucion_registrada",
-      "usuario_id": 10,
-      "correlation_id": "41aefe1497d94186",
-      "fecha": "2026-10-23T01:09:20.561000+00:00"
+      "usuario_id": 11,
+      "correlation_id": "25aeb7fa817a4425",
+      "fecha": "2026-11-22T18:44:10.888000+00:00"
     },
     {
-      "id": "6ada3a86e8c6892d152d3f08",
-      "servicio": "devoluciones",
-      "tipo": "devolucion_registrada",
-      "usuario_id": 10,
-      "correlation_id": "7bb68147efc34694",
-      "fecha": "2026-10-22T16:32:06.456000+00:00"
+      "id": "6b03349864e8f88c00ab6b6d",
+      "servicio": "integraciones-monitoreo",
+      "tipo": "venta_importada",
+      "usuario_id": 18,
+      "correlation_id": "a9e29d4812964df0",
+      "fecha": "2026-11-22T18:29:44.565000+00:00"
     },
     {
-      "id": "6ada1de3e8c6892d152d3f07",
-      "servicio": "devoluciones",
-      "tipo": "devolucion_autorizacion",
-      "usuario_id": 16,
-      "correlation_id": "fdd32d64b3b24371",
-      "fecha": "2026-10-22T14:29:55.334000+00:00"
+      "id": "6b033498a7125e1ee88f2f0b",
+      "servicio": "integraciones-monitoreo",
+      "tipo": "venta_importada",
+      "usuario_id": 18,
+      "correlation_id": "2b8829a81e724032",
+      "fecha": "2026-11-22T18:29:44.494000+00:00"
+    },
+    {
+      "id": "6b033498a7125e1ee88f2f0a",
+      "servicio": "integraciones-monitoreo",
+      "tipo": "venta_importada",
+      "usuario_id": 18,
+      "correlation_id": "448abad358df4dce",
+      "fecha": "2026-11-22T18:29:44.405000+00:00"
     }
   ],
   "paginacion": {
     "pagina": 1,
     "por_pagina": 5,
-    "total": 18,
-    "paginas": 4
+    "total": 32,
+    "paginas": 7
   }
 }
 ```
@@ -1318,12 +1330,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/eventos?servicio=auth"
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (10 ms, 77 bytes):
+Respuesta - **200 OK** (12 ms, 77 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 77
-X-Correlation-ID: da6c4c134f0d4849
+X-Correlation-ID: ddc681c2c70f4012
 ```
 
 ```json
@@ -1357,17 +1369,17 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/eventos?por_pagina=2" 
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (14 ms, 653 bytes):
+Respuesta - **200 OK** (12 ms, 652 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
-Content-Length: 653
-X-Correlation-ID: 0ad788c8587d450c
+Content-Length: 652
+X-Correlation-ID: 22d9e2518c894a82
 ```
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
-<eventos><datos><item><id>6adad7550194762f256264d5</id><servicio>devoluciones</servicio><tipo>devolucion_registrada</tipo><usuario_id>10</usuario_id><correlation_id>092b43ba39ff4b37</correlation_id><fecha>2026-10-23T03:41:09.495000+00:00</fecha></item><item><id>6adab3ea0194762f256264d4</id><servicio>devoluciones</servicio><tipo>devolucion_autorizacion</tipo><usuario_id>16</usuario_id><correlation_id>1ffadf89fd364d1d</correlation_id><fecha>2026-10-23T01:10:02.439000+00:00</fecha></item></datos><paginacion><pagina>1</pagina><por_pagina>2</por_pagina><total>18</total><paginas>9</paginas></paginacion></eventos>
+<eventos><datos><item><id>6b0337fab29f09f2d6b3b7cc</id><servicio>devoluciones</servicio><tipo>devolucion_registrada</tipo><usuario_id>11</usuario_id><correlation_id>6646b2aace514c2c</correlation_id><fecha>2026-11-22T18:44:10.938000+00:00</fecha></item><item><id>6b0337fa39e349dccf13fbe1</id><servicio>devoluciones</servicio><tipo>devolucion_registrada</tipo><usuario_id>11</usuario_id><correlation_id>25aeb7fa817a4425</correlation_id><fecha>2026-11-22T18:44:10.888000+00:00</fecha></item></datos><paginacion><pagina>1</pagina><por_pagina>2</por_pagina><total>32</total><paginas>16</paginas></paginacion></eventos>
 ```
 
 Verificaciones:
@@ -1389,12 +1401,12 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/eventos?servicio=sssss
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **400 BAD REQUEST** (8 ms, 142 bytes):
+Respuesta - **400 BAD REQUEST** (10 ms, 142 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 142
-X-Correlation-ID: da88ba988f0b406d
+X-Correlation-ID: 63b94c6b5b874dfd
 ```
 
 ```json
@@ -1404,7 +1416,7 @@ X-Correlation-ID: da88ba988f0b406d
     "tipo": "validacion",
     "mensaje": "Filtro servicio demasiado largo.",
     "detalles": null,
-    "correlation_id": "da88ba988f0b406d"
+    "correlation_id": "63b94c6b5b874dfd"
   }
 }
 ```
@@ -1416,9 +1428,58 @@ Verificaciones:
 
 ## P4-AUD-26
 
-**obsoleta: alertas de fraude**
+**retirada: clasificar motivo**
 
-Objetivo: Sigue respondiendo como antes, pero avisa que esta obsoleta y donde vive su sucesor (reportes-analitica, 8018).
+Objetivo: La clasificacion de motivos vive ahora en clasificacion-motivos (8010). Esta ruta responde 410 aun sin token y dice donde.
+
+Comando:
+
+```bash
+curl -sS -i -X POST "http://$VM_HOST:8008/api/v1/analisis/clasificar-motivo" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -d '{"descripcion":"El producto llego con el empaque roto"}'
+```
+
+Respuesta - **410 GONE** (9 ms, 455 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 455
+X-Correlation-ID: 816331a09b2d4f80
+Deprecation: true
+Link: <http://clasificacion-motivos:8000/api/v1/motivos/sugerencias>; rel="successor-version"
+```
+
+```json
+{
+  "error": {
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
+    "detalles": {
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
+    },
+    "correlation_id": "816331a09b2d4f80"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 410
+- ok: 410 servicio_movido
+- ok: nombra al sucesor
+- ok: lleva Deprecation: true
+
+## P4-AUD-27
+
+**retirada: alertas de fraude**
+
+Objetivo: Las alertas de fraude viven en reportes-analitica (8018). Ni un Analista con token las obtiene aqui.
 
 Comando:
 
@@ -1428,223 +1489,140 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/alertas-fraude" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (29 ms, 690 bytes):
+Respuesta - **410 GONE** (10 ms, 455 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 690
-X-Correlation-ID: 09cf1c853ab54362
+Content-Length: 455
+X-Correlation-ID: 56b0d6a4be8e42af
 Deprecation: true
 Link: <http://reportes-analitica:8000/api/v1/analitica/alertas-fraude>; rel="successor-version"
 ```
 
 ```json
 {
-  "datos": [
-    {
-      "cliente_id": 10,
-      "cliente": "Ana Lopez Garcia",
-      "devoluciones_90_dias": 19,
-      "rechazadas": 0,
-      "monto_reembolsado": 586.47,
-      "razones": [
-        "frecuencia alta en 90 dias"
-      ],
-      "requiere_revision_humana": true
+  "error": {
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
+    "detalles": {
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
     },
-    {
-      "cliente_id": 11,
-      "cliente": "Miguel Ramos Soto",
-      "devoluciones_90_dias": 14,
-      "rechazadas": 2,
-      "monto_reembolsado": 108.22,
-      "razones": [
-        "frecuencia alta en 90 dias",
-        "multiples solicitudes rechazadas"
-      ],
-      "requiere_revision_humana": true
-    },
-    {
-      "cliente_id": 12,
-      "cliente": "Sofia Herrera",
-      "devoluciones_90_dias": 13,
-      "rechazadas": 0,
-      "monto_reembolsado": 278.42,
-      "razones": [
-        "frecuencia alta en 90 dias"
-      ],
-      "requiere_revision_humana": true
-    }
-  ],
-  "total": 3,
-  "aviso": "Son indicadores preventivos, no una determinacion de fraude."
+    "correlation_id": "56b0d6a4be8e42af"
+  }
 }
 ```
 
 Verificaciones:
 
-- ok: HTTP 200
-- ok: Deprecation: true
-- ok: Link al sucesor
-
-## P4-AUD-27
-
-**obsoleta: clasificar motivo**
-
-Objetivo: La clasificacion de motivos pasa a clasificacion-motivos (8010); esta ruta avisa su sucesor. Orienta, el usuario confirma.
-
-Comando:
-
-```bash
-curl -sS -i -X POST "http://$VM_HOST:8008/api/v1/analisis/clasificar-motivo" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_CLIENTE" \
-  -d '{"descripcion":"El producto llego con el empaque roto y derramado"}'
-```
-
-Respuesta - **200 OK** (17 ms, 200 bytes):
-
-```http
-Content-Type: application/json
-Content-Length: 200
-X-Correlation-ID: 6bbe36a6a5c043ed
-Deprecation: true
-Link: <http://clasificacion-motivos:8000/api/v1/motivos/sugerencias>; rel="successor-version"
-```
-
-```json
-{
-  "sugerencias": [
-    {
-      "motivo": "Producto danado",
-      "puntaje": 1,
-      "coincidencias": [
-        "roto"
-      ],
-      "motivo_id": 1
-    }
-  ],
-  "requiere_confirmacion": true,
-  "explicacion": "La clasificacion orienta; el usuario confirma el motivo."
-}
-```
-
-Verificaciones:
-
-- ok: HTTP 200
-- ok: Deprecation: true
-- ok: Link a clasificacion-motivos
-- ok: pide confirmacion
+- ok: HTTP 410
+- ok: 410 servicio_movido
+- ok: nombra al sucesor
+- ok: lleva Deprecation: true
 
 ## P4-AUD-28
 
-**obsoleta: clasificar motivo 400**
+**retirada: Pareto**
 
-Objetivo: La descripcion tiene entre 10 y 2000 caracteres.
+Objetivo: El Pareto vive en reportes-analitica (8018), calculado directo en PostgreSQL.
 
 Comando:
 
 ```bash
-curl -sS -i -X POST "http://$VM_HOST:8008/api/v1/analisis/clasificar-motivo" \
+curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/pareto?dimension=motivo" \
   -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN_CLIENTE" \
-  -d '{"descripcion":"corto"}'
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (9 ms, 163 bytes):
+Respuesta - **410 GONE** (9 ms, 455 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 163
-X-Correlation-ID: fcc622bd6e814089
+Content-Length: 455
+X-Correlation-ID: d3fee30e5697496c
 Deprecation: true
-Link: <http://clasificacion-motivos:8000/api/v1/motivos/sugerencias>; rel="successor-version"
+Link: <http://reportes-analitica:8000/api/v1/reportes/pareto>; rel="successor-version"
 ```
 
 ```json
 {
   "error": {
-    "codigo": 400,
-    "tipo": "validacion",
-    "mensaje": "descripcion debe contener entre 10 y 2000 caracteres.",
-    "detalles": null,
-    "correlation_id": "fcc622bd6e814089"
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
+    "detalles": {
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
+    },
+    "correlation_id": "d3fee30e5697496c"
   }
 }
 ```
 
 Verificaciones:
 
-- ok: HTTP 400
-- ok: tipo validacion
-- ok: tambien avisa Deprecation
+- ok: HTTP 410
+- ok: 410 servicio_movido
+- ok: nombra al sucesor
+- ok: lleva Deprecation: true
 
 ## P4-AUD-29
 
-**obsoleta: alias de eventos**
+**retirada: sincronizar**
 
-Objetivo: La traza por correlation id es auditoria: el alias avisa que el sucesor es /api/v1/auditoria/eventos.
+Objetivo: Sincronizar ya no hace falta: 8018 calcula directo en PostgreSQL y siempre esta al dia. No escribe nada.
 
 Comando:
 
 ```bash
-curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/eventos?por_pagina=2" \
+curl -sS -i -X POST "http://$VM_HOST:8008/api/v1/analisis/sincronizar" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer $TOKEN_ADMIN"
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA" \
+  -d '{}'
 ```
 
-Respuesta - **200 OK** (10 ms, 450 bytes):
+Respuesta - **410 GONE** (10 ms, 455 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 450
-X-Correlation-ID: 2f154b48aa2b4188
+Content-Length: 455
+X-Correlation-ID: 2ccbf572798b4850
 Deprecation: true
-Link: </api/v1/auditoria/eventos>; rel="successor-version"
 ```
 
 ```json
 {
-  "datos": [
-    {
-      "id": "6adad7550194762f256264d5",
-      "servicio": "devoluciones",
-      "tipo": "devolucion_registrada",
-      "usuario_id": 10,
-      "correlation_id": "092b43ba39ff4b37",
-      "fecha": "2026-10-23T03:41:09.495000+00:00"
+  "error": {
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
+    "detalles": {
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
     },
-    {
-      "id": "6adab3ea0194762f256264d4",
-      "servicio": "devoluciones",
-      "tipo": "devolucion_autorizacion",
-      "usuario_id": 16,
-      "correlation_id": "1ffadf89fd364d1d",
-      "fecha": "2026-10-23T01:10:02.439000+00:00"
-    }
-  ],
-  "paginacion": {
-    "pagina": 1,
-    "por_pagina": 2,
-    "total": 18,
-    "paginas": 9
+    "correlation_id": "2ccbf572798b4850"
   }
 }
 ```
 
 Verificaciones:
 
-- ok: HTTP 200
-- ok: Deprecation: true
-- ok: Link a la auditoria
+- ok: HTTP 410
+- ok: 410 servicio_movido
 
 ## P4-AUD-30
 
-**obsoleta: resumen sin sucesor**
+**retirada: resumen**
 
-Objetivo: Solo contaba snapshots y no tiene sucesor: lleva Deprecation pero no Link.
+Objetivo: El resumen solo contaba snapshots y no tiene sucesor.
 
 Comando:
 
@@ -1654,73 +1632,123 @@ curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/resumen" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (12 ms, 91 bytes):
+Respuesta - **410 GONE** (9 ms, 455 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 91
-X-Correlation-ID: 49681a4e7a9e479a
+Content-Length: 455
+X-Correlation-ID: d93dcc6c31a14ea3
 Deprecation: true
-```
-
-```json
-{
-  "casos_sincronizados": 46,
-  "reportes_pareto": 16,
-  "nota": "No implica causa raiz comprobada."
-}
-```
-
-Verificaciones:
-
-- ok: HTTP 200
-- ok: Deprecation: true
-- ok: sin Link
-
-## P4-AUD-31
-
-**obsoleta: cliente no ve alertas de fraude**
-
-Objetivo: Las alertas nombran clientes: solo Administrador y Analista (RN-15).
-
-Comando:
-
-```bash
-curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/alertas-fraude" \
-  -H "Accept: application/json" \
-  -H "Authorization: Bearer $TOKEN_CLIENTE"
-```
-
-Respuesta - **403 FORBIDDEN** (10 ms, 232 bytes):
-
-```http
-Content-Type: application/json
-Content-Length: 232
-X-Correlation-ID: 786899437c4241a1
-Deprecation: true
-Link: <http://reportes-analitica:8000/api/v1/analitica/alertas-fraude>; rel="successor-version"
 ```
 
 ```json
 {
   "error": {
-    "codigo": 403,
-    "tipo": "sin_permiso",
-    "mensaje": "Tu rol no tiene permiso para esta operacion.",
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
     "detalles": {
-      "rol": "Cliente",
-      "roles_permitidos": [
-        "Administrador",
-        "Analista de Devoluciones"
-      ]
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
     },
-    "correlation_id": "786899437c4241a1"
+    "correlation_id": "d93dcc6c31a14ea3"
   }
 }
 ```
 
 Verificaciones:
 
-- ok: HTTP 403
-- ok: tipo sin_permiso
+- ok: HTTP 410
+- ok: 410 servicio_movido
+
+## P4-AUD-31
+
+**retirada: alias de eventos**
+
+Objetivo: La traza por correlation id es auditoria: el sucesor es /api/v1/auditoria/eventos, que sigue en 200 (ver arriba).
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/analisis/eventos?por_pagina=2" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ADMIN"
+```
+
+Respuesta - **410 GONE** (9 ms, 455 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 455
+X-Correlation-ID: 9d3f2e4cd58e4dd3
+Deprecation: true
+Link: </api/v1/auditoria/eventos>; rel="successor-version"
+```
+
+```json
+{
+  "error": {
+    "codigo": 410,
+    "tipo": "servicio_movido",
+    "mensaje": "El analisis ya no se ofrece en analisis-auditoria; solo queda la auditoria.",
+    "detalles": {
+      "clasificar-motivo": "http://clasificacion-motivos:8000/api/v1/motivos/sugerencias",
+      "alertas-fraude": "http://reportes-analitica:8000/api/v1/analitica/alertas-fraude",
+      "pareto": "http://reportes-analitica:8000/api/v1/reportes/pareto",
+      "eventos": "/api/v1/auditoria/eventos"
+    },
+    "correlation_id": "9d3f2e4cd58e4dd3"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 410
+- ok: 410 servicio_movido
+- ok: nombra al sucesor
+- ok: lleva Deprecation: true
+
+## P4-AUD-32
+
+**la auditoria sigue en pie tras el corte**
+
+Objetivo: Retirar el analisis no toca la auditoria: la separacion que pidio el profe.
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8008/api/v1/auditoria/estado" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **200 OK** (23 ms, 358 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 358
+X-Correlation-ID: ce3b69f5278b4a0b
+```
+
+```json
+{
+  "registros": 1601,
+  "primero": "2026-09-06T23:20:35.290510+00:00",
+  "ultimo": "2026-11-22T18:52:58.878389+00:00",
+  "proteccion": {
+    "actualizar_y_borrar_bloqueados": true,
+    "vaciar_bloqueado": true,
+    "completa": true
+  },
+  "aviso": "La bitacora solo admite agregar registros. Esta proteccion es del esquema de la base; no sustituye el control de acceso al servidor de PostgreSQL."
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 200
+- ok: proteccion completa
 
