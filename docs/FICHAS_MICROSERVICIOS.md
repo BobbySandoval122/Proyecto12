@@ -118,3 +118,15 @@ esta ficha no sustituyen esas ejecuciones.
 | Reglas | Cada edicion crea una version y exige explicar el cambio; la sugerencia nunca modifica la devolucion; una sola sugerencia pendiente por devolucion; corregir o descartar exige comentario; una clasificacion revisada no se revisa otra vez. |
 | Roles | Lectura del catalogo: roles internos. Alta y edicion: Administrador y Supervisor. Revision: Analista, Supervisor y Administrador. `POST /sugerencias` lo puede usar cualquier rol (30 por minuto) y no revela las palabras clave. |
 | Despliegue/pruebas | `services/clasificacion_motivos/Dockerfile`, Compose `clasificacion-motivos`; 67 pruebas que corren sin base y `test_integracion.py` en la VM. El `clasificar-motivo` de `analisis-auditoria` (8008) sigue vigente hasta separar la auditoria. |
+
+## 11. proveedores — puerto 8013
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Consultar proveedores, lo que surten y sus indicadores de calidad, y dar seguimiento a las reclamaciones que se les hacen. |
+| Justificacion | RF-24, RF-26, RN-09, RN-12. Cuando varias devoluciones apuntan al mismo proveedor o lote, la empresa debe poder reclamar, seguir la respuesta y saber cuanto recupero. El alta del catalogo de proveedores sigue en `ventas-catalogos` (8006). |
+| Persistencia | PostgreSQL: `reclamaciones_proveedor`, `reclamacion_devoluciones`, `seguimiento_reclamacion` (migracion 042); lee `proveedores`, `lotes`, `devoluciones`, `inspecciones_ref` y `vista_costo_devolucion`. Sesion en Redis. |
+| Endpoints | `GET /proveedores`, `GET /proveedores/{id}`, `/productos`, `/indicadores`; `GET/POST /proveedores/reclamaciones`, `GET /reclamaciones/{id}`, `POST /reclamaciones/{id}/seguimiento`, bajo `/api/v1`. |
+| Reglas | El lote y las devoluciones deben ser del proveedor; una devolucion no esta en dos reclamaciones abiertas; transiciones de estado controladas; aceptar, aceptar parcialmente o rechazar solo tras la respuesta del proveedor; no se recupera mas de lo reclamado; cerrar exige resolucion y comentario. El semaforo no califica con menos de 20 unidades vendidas. |
+| Roles | Lectura: Administrador, Analista, Supervisor y Encargado de Reembolsos. Crear y dar seguimiento: Administrador, Analista y Supervisor. Cliente e Inspector reciben 403. |
+| Despliegue/pruebas | `services/proveedores/Dockerfile`, Compose `proveedores`; 74 pruebas que corren sin base y `test_integracion.py` en la VM. |

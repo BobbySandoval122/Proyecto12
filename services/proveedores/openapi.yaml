@@ -1,0 +1,156 @@
+openapi: 3.0.3
+info:
+  title: Proveedores
+  version: v1
+  description: >-
+    Proveedores con lo que surten e indicadores de calidad, y reclamaciones con
+    seguimiento. Los indicadores orientan la revision humana; no determinan
+    responsabilidad (RN-09). El alta del catalogo de proveedores sigue en
+    ventas-catalogos (8006). Responde JSON o XML segun Accept.
+servers:
+- url: http://localhost:8013
+paths:
+  /health:
+    get:
+      summary: Estado del servicio y sus dependencias
+      responses:
+        '200': {description: Servicio ok}
+        '503': {description: Servicio degradado}
+  /api/v1/proveedores:
+    get:
+      summary: Proveedores con indicadores, de mayor a menor tasa de devolucion
+      description: Roles Administrador, Analista, Supervisor y Encargado de Reembolsos.
+      parameters:
+      - {name: q, in: query, schema: {type: string}}
+      - {name: solo_activos, in: query, schema: {type: boolean, default: true}}
+      - {name: desde, in: query, schema: {type: string, format: date}}
+      - {name: hasta, in: query, schema: {type: string, format: date}}
+      - {name: limite, in: query, schema: {type: integer}}
+      - {name: desplazamiento, in: query, schema: {type: integer}}
+      responses:
+        '200': {description: Pagina de proveedores y tasa_promedio_pct}
+        '400': {description: Filtro invalido}
+        '401': {description: Sin token}
+        '403': {description: Rol sin permiso}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/{id}:
+    get:
+      summary: Proveedor con indicadores, productos y reclamaciones recientes
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      - {name: desde, in: query, schema: {type: string, format: date}}
+      - {name: hasta, in: query, schema: {type: string, format: date}}
+      responses:
+        '200': {description: Detalle del proveedor}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/{id}/productos:
+    get:
+      summary: Productos que surte (como proveedor principal o por lotes)
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: Productos}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/{id}/indicadores:
+    get:
+      summary: Indicadores de calidad
+      description: >-
+        tasa_pct = unidades devueltas / vendidas; veces_promedio contra el
+        promedio de todos; semaforo normal, atencion (1.25 veces), critico (2 veces)
+        o sin_datos (menos de 20 unidades vendidas). Incluye inspecciones no aptas,
+        costo de sus devoluciones, reclamaciones y dias promedio de respuesta.
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      - {name: desde, in: query, schema: {type: string, format: date}}
+      - {name: hasta, in: query, schema: {type: string, format: date}}
+      responses:
+        '200': {description: Indicadores}
+        '400': {description: Fecha invalida}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/reclamaciones:
+    get:
+      summary: Reclamaciones (filtra por estado, proveedor_id, lote_id y vencidas)
+      parameters:
+      - {name: estado, in: query, schema: {type: string, enum: [abierta, enviada, en_analisis, respondida, cerrada]}}
+      - {name: proveedor_id, in: query, schema: {type: integer}}
+      - {name: lote_id, in: query, schema: {type: integer}}
+      - {name: vencidas, in: query, schema: {type: boolean}}
+      responses:
+        '200': {description: Pagina de reclamaciones}
+      security: [{bearerAuth: []}]
+    post:
+      summary: Crea una reclamacion (Administrador, Analista o Supervisor)
+      description: >-
+        Exige lote_id o devolucion_ids. El lote y las devoluciones deben ser del
+        proveedor; una devolucion no puede estar en dos reclamaciones abiertas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Reclamacion'}
+          application/xml:
+            schema: {type: object, xml: {name: reclamacion}}
+      responses:
+        '201': {description: Creada con folio RCL-AAAA-####}
+        '400': {description: Datos invalidos}
+        '403': {description: Rol sin permiso}
+        '404': {description: Proveedor, lote o devolucion inexistente}
+        '409': {description: Lote o devolucion ajena, o devolucion ya reclamada}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/reclamaciones/{id}:
+    get:
+      summary: Reclamacion con sus devoluciones y su linea de tiempo
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: Detalle}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+  /api/v1/proveedores/reclamaciones/{id}/seguimiento:
+    post:
+      summary: Cambia el estado de una reclamacion
+      description: >-
+        Transiciones: abierta a enviada o cerrada; enviada a en_analisis, respondida
+        o cerrada; en_analisis a respondida o cerrada; respondida a en_analisis o
+        cerrada. Cerrar exige resolucion y comentario. aceptada, parcial y rechazada
+        solo despues de respondida; retirada en cualquier momento. aceptada y parcial
+        exigen monto_recuperado, que no puede superar lo reclamado.
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado: {type: string, enum: [enviada, en_analisis, respondida, cerrada]}
+                comentario: {type: string, maxLength: 500}
+                resolucion: {type: string, enum: [aceptada, parcial, rechazada, retirada]}
+                monto_recuperado: {type: string, example: '1250.50'}
+          application/xml:
+            schema: {type: object, xml: {name: seguimiento}}
+      responses:
+        '200': {description: Estado actualizado}
+        '400': {description: Datos invalidos}
+        '404': {description: Inexistente}
+        '409': {description: Transicion invalida, sin respuesta del proveedor o monto excedido}
+      security: [{bearerAuth: []}]
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    Reclamacion:
+      type: object
+      required: [proveedor_id, asunto, descripcion]
+      properties:
+        proveedor_id: {type: integer}
+        lote_id: {type: integer}
+        devolucion_ids: {type: array, maxItems: 100, items: {type: integer}}
+        asunto: {type: string, minLength: 5, maxLength: 150}
+        descripcion: {type: string, minLength: 10, maxLength: 2000}
+        monto_reclamado: {type: string, example: '4800.00'}
+        fecha_limite_respuesta: {type: string, format: date}
