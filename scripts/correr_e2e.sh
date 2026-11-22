@@ -79,10 +79,14 @@ fi
 if [ "$MODO" = "todo" ] || [ "$MODO" = "servicios" ]; then
   for servicio in auth ventas-catalogos devoluciones evidencias logistica \
                   inspecciones reembolsos-costos analisis-auditoria sincronizacion \
-                  integraciones-monitoreo; do
+                  integraciones-monitoreo clasificacion-motivos proveedores causa-raiz \
+                  reportes-analitica; do
     correr docker compose run --rm -e INTEGRACION=1 "$servicio" \
       python -m pytest -v -p no:cacheprovider tests/test_integracion.py
   done
+  # Trazabilidad de lotes y series (tercer parcial): segundo archivo de la misma imagen.
+  correr docker compose run --rm -e INTEGRACION=1 ventas-catalogos \
+    python -m pytest -v -p no:cacheprovider tests/test_integracion_trazabilidad.py
 fi
 
 echo | tee -a "$SALIDA"

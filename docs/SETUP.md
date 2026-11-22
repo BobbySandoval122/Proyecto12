@@ -403,17 +403,12 @@ docker compose run --rm -v "$PWD":/repo -w /repo -e PYTHONPATH=/repo -e INTEGRAC
 docker compose run --rm -e INTEGRACION=1 logistica python -m pytest -v tests/test_integracion.py
 ```
 
-**Servicios de calidad y causa raiz.** `scripts/correr_e2e.sh servicios` todavia no incluye
-`clasificacion-motivos`, `proveedores`, `causa-raiz` ni `reportes-analitica`, ni el segundo
-archivo de pruebas de `ventas-catalogos`. Se corren a mano, uno por uno:
+**Servicios de calidad y causa raiz.** `scripts/correr_e2e.sh servicios` ya incluye `clasificacion-motivos`,
+`proveedores`, `causa-raiz`, `reportes-analitica` y el segundo archivo de pruebas de `ventas-catalogos`
+(`test_integracion_trazabilidad.py`). Para correr uno solo:
 
 ```bash
-docker compose run --rm --no-deps -T -e INTEGRACION=1 clasificacion-motivos python -m pytest -v tests/test_integracion.py
-docker compose run --rm --no-deps -T -e INTEGRACION=1 proveedores python -m pytest -v tests/test_integracion.py
 docker compose run --rm --no-deps -T -e INTEGRACION=1 causa-raiz python -m pytest -v tests/test_integracion.py
-docker compose run --rm --no-deps -T -e INTEGRACION=1 reportes-analitica python -m pytest -v tests/test_integracion.py
-docker compose run --rm --no-deps -T -e INTEGRACION=1 analisis-auditoria python -m pytest -v tests/test_integracion.py
-docker compose run --rm --no-deps -T -e INTEGRACION=1 ventas-catalogos python -m pytest -v tests/test_integracion.py tests/test_integracion_trazabilidad.py
 ```
 
 - **Deja pasar un minuto entre una suite y otra.** `auth` limita el login a 10 por minuto por
