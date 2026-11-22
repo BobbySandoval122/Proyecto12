@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Alta (POST) y edicion (PUT) de un submotivo. En el alta va codigo; en la
+     edicion va motivo_cambio, que queda en el historial de versiones. xs:all
+     porque el orden de los campos no importa para quien envia el XML. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="submotivo">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="categoria_id" type="xs:positiveInteger"/>
+        <xs:element name="motivo_id" type="xs:string" minOccurs="0"/>
+        <xs:element name="codigo" type="xs:string" minOccurs="0"/>
+        <xs:element name="nombre" type="xs:string"/>
+        <xs:element name="descripcion" type="xs:string" minOccurs="0"/>
+        <xs:element name="motivo_cambio" type="xs:string" minOccurs="0"/>
+        <xs:element name="palabras_clave" minOccurs="0">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" type="xs:string" minOccurs="0" maxOccurs="30"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

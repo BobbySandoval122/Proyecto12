@@ -731,6 +731,82 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 dos modos y por que la caida de una API no duplica operaciones.
 
 
+## 2026-11-21 — Clasificacion de motivos (Persona 4, dominio 10)
+
+**Decision.** Servicio propio en el puerto 8010 con cinco categorias de origen
+y doce submotivos iniciales que viven en la migracion 041 (son parte del
+contrato, como los roles de la 008). Cada submotivo apunta a un motivo del
+catalogo existente sin reemplazarlo, asi las devoluciones registradas siguen
+validas y el analisis puede agrupar por origen.
+
+**Versiones.** Cada cambio (incluido activar o desactivar) sube `version` y
+guarda una copia en `submotivos_versiones`, que nunca se edita. Se exige el
+motivo del cambio. Cada clasificacion revisada guarda la version con la que se
+decidio. `PUT` con los mismos datos no crea version: responde `sin_cambios`.
+
+**Revision humana (RN-11).** La sugerencia por palabras clave se guarda como
+`pendiente`; solo una persona la confirma, corrige o descarta, y el servicio no
+toca la devolucion. Una restriccion de la base impide una clasificacion
+definitiva sin responsable. Una palabra coincide solo al inicio de una palabra
+del texto (`caduc` si coincide con `caducado`; `sol` no con `solo`), porque el
+primer intento por fragmentos daba sugerencias absurdas.
+
+**Cliente.** Puede pedir una sugerencia de texto para su formulario, pero la
+respuesta omite las palabras clave y esta limitada a 30 por minuto.
+
+**Pendiente.** `analisis-auditoria` conserva su `clasificar-motivo`; se retira
+al separar la auditoria (bloque final del plan de Persona 4).
+
+## 2026-11-21 — Lotes, series y tasas (Persona 4, dominio 9)
+
+**Decision.** La trazabilidad vive en `ventas-catalogos` (8006) y no en un
+servicio nuevo: lote, serie y venta ya estan en las mismas tablas, y la
+trazabilidad es una consulta sobre ellas (ver `docs/PUERTOS.md`). Se agrega la
+tabla `series_producto` (migracion 040, rango de Persona 4) con `numero_serie`
+UNIQUE global y `venta_detalle_id` nulo mientras la unidad sigue en almacen.
+
+**Tasas.** Para proveedor, tienda, producto y lote la tasa es unidades
+devueltas entre unidades vendidas, con el mismo conteo que `panel.causas`, de
+modo que el panel y el servicio no pueden discrepar. Una ruta no tiene
+"unidades vendidas", asi que ahi se mide el dano: inspecciones no aptas entre
+inspecciones realizadas. Un lote sin ventas devuelve `null`, no 0.
+
+**Seguridad.** Los clientes no consultan trazabilidad (expone proveedores y
+costos internos); la respuesta no incluye datos del cliente (RN-15). Todo es
+informacion para revision humana, no una causa (RN-09).
+
+**Datos de demo.** `crear_lote_problematico` en `scripts/seed_demo.py` crea el
+lote refrigerado `L-2026-PROB-01`: 12 ventas de 8 unidades, 9 devoluciones de 2
+unidades (18.75 %), 6 de ellas en Tienda Centro por una misma ruta. Sin `random`
+e idempotente. Lo necesitan las inspecciones (Persona 3) y la demo de causa raiz.
+
+## 2026-11-21 — Proveedores y reclamaciones (Persona 4, dominio 13)
+
+**Decision.** Servicio propio en el puerto 8013 que NO duplica el alta de
+proveedores: el catalogo sigue en `ventas-catalogos` (8006) y aqui se consulta,
+se mide y se reclama. "Productos que surten" se deduce de `productos` y
+`lotes`, sin tabla nueva, porque un proveedor puede surtir un producto sin ser
+su proveedor principal.
+
+**Reclamaciones.** Tres tablas (migracion 042): la reclamacion con folio
+generado por la base (`RCL-AAAA-####`, como el de devoluciones), las devoluciones
+que la respaldan y una linea de tiempo inmutable. Una restriccion de la base
+obliga a que una reclamacion cerrada diga como termino y a que una abierta no
+traiga resolucion. Que una devolucion no este en dos reclamaciones abiertas
+cruza dos tablas y no cabe en un indice, asi que el servicio bloquea las filas
+de las devoluciones al crear. Solo se acepta o rechaza lo que el proveedor ya
+respondio; retirarla se puede en cualquier momento.
+
+**Indicadores y semaforo.** La tasa es unidades devueltas entre vendidas, con
+el mismo conteo que el panel de causas. El semaforo compara contra el promedio
+de todos los proveedores (atencion desde 1.25 veces, critico desde 2) y devuelve
+`sin_datos` con menos de 20 unidades vendidas: una tasa con pocas ventas
+asusta sin informar. Es una guia para revisar, no un juicio sobre el proveedor
+(RN-09). Los montos se manejan como decimales con dos cifras, nunca como float.
+
+**Acceso.** Por tratar costos y reclamos, solo lo leen Administrador, Analista,
+Supervisor y Encargado de Reembolsos; Cliente e Inspector reciben 403.
+
 ## 2026-11-21 — Causa raiz y acciones correctivas (Persona 4, dominios 11 y 12)
 
 **Decision.** Un solo servicio (8011) para la investigacion y las acciones CAPA:
