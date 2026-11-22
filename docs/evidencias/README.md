@@ -296,7 +296,7 @@ o XML, respuesta completa, codigo HTTP, efecto en PostgreSQL y al menos un error
 
 ```bash
 cd ~/Proyecto12                                   # en la VM, con los servicios levantados y seed_demo aplicado
-python3 scripts/evidencias/ejecutar.py clasificacion      # tambien: proveedores, causa_raiz, todos
+python3 scripts/evidencias/ejecutar.py clasificacion      # tambien: proveedores, causa_raiz, reportes, todos
 ```
 
 - Escribe `docs/evidencias/ejecuciones/<servicio>.md`: por cada caso, el `curl` listo para copiar, la
