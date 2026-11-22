@@ -27,11 +27,17 @@ def ordenado_por_tasa(filas):
 def ejecutar(c):
     c.ctx["lote"] = int(c.valor(f"SELECT id FROM lotes WHERE numero_lote = '{LOTE}'"))
     c.ctx["prov"] = int(c.valor("SELECT proveedor_id FROM lotes WHERE id = {lote}"))
-    c.ctx["otro_lote"] = int(c.valor("SELECT id FROM lotes WHERE id <> {lote} AND activo ORDER BY id LIMIT 1"))
+    # Las lineas del lote de la demo ya tienen todas sus series (las carga seed_demo); las nuevas se ligan en un lote con cupo.
+    cupo = "vd.cantidad - (SELECT count(*) FROM series_producto s WHERE s.venta_detalle_id = vd.id)"
+    c.ctx["libre1"] = int(c.valor(f"SELECT vd.id FROM venta_detalle vd WHERE {cupo} >= 3 AND EXISTS (SELECT 1 FROM devoluciones d "
+                                  "WHERE d.venta_detalle_id = vd.id AND d.eliminado_en IS NULL) ORDER BY vd.id LIMIT 1"))
+    c.ctx["lote_v"] = int(c.valor("SELECT lote_id FROM venta_detalle WHERE id = {libre1}"))
+    c.ctx["numero_v"] = c.valor("SELECT numero_lote FROM lotes WHERE id = {lote_v}")
+    c.ctx["libre2"] = int(c.valor(f"SELECT vd.id FROM venta_detalle vd WHERE vd.lote_id = {{lote_v}} AND vd.id <> {{libre1}} AND {cupo} >= 1 ORDER BY vd.id LIMIT 1"))
+    c.ctx["otro_lote"] = int(c.valor("SELECT id FROM lotes WHERE id NOT IN ({lote}, {lote_v}) AND activo ORDER BY id LIMIT 1"))
     c.ctx["det1"] = int(c.valor("SELECT d.venta_detalle_id FROM devoluciones d JOIN venta_detalle vd ON vd.id = d.venta_detalle_id "
                                 "WHERE vd.lote_id = {lote} AND d.eliminado_en IS NULL ORDER BY d.id LIMIT 1"))
-    c.ctx["det2"] = int(c.valor("SELECT id FROM venta_detalle WHERE lote_id = {lote} AND id <> {det1} ORDER BY id LIMIT 1"))
-    c.ctx["det_otro"] = int(c.valor("SELECT id FROM venta_detalle WHERE lote_id <> {lote} ORDER BY id LIMIT 1"))
+    c.ctx["det_otro"] = int(c.valor("SELECT id FROM venta_detalle WHERE lote_id <> {lote_v} ORDER BY id LIMIT 1"))
     c.limpieza += [f"DELETE FROM series_producto WHERE numero_serie LIKE '{PREFIJO}%'"]
     vendidas = "SELECT COALESCE(SUM(vd.cantidad), 0) FROM venta_detalle vd JOIN ventas v ON v.id = vd.venta_id WHERE vd.lote_id = {lote} AND v.eliminado_en IS NULL"
     devueltas = ("SELECT COALESCE(SUM(d.cantidad_devuelta), 0) FROM devoluciones d JOIN venta_detalle vd ON vd.id = d.venta_detalle_id "
@@ -92,30 +98,33 @@ def ejecutar(c):
            verifica=[("tipo no_encontrado", lambda r: tipo_error(r) == "no_encontrado")])
 
     # ---------------------------------------------------------------- alta de series
-    c.caso("series 403 analista", "POST", f"{API}/lotes/{{lote}}/series", rol="analista", espera=403,
+    c.caso("series 403 analista", "POST", f"{API}/lotes/{{lote_v}}/series", rol="analista", espera=403,
            json_cuerpo={"series": [PREFIJO + "X"]}, objetivo="Dar de alta series es del Administrador.", verifica=[("tipo sin_permiso", lambda r: tipo_error(r) == "sin_permiso")])
-    c.caso("series 201 alta de tres", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=201,
+    c.caso("series 201 alta de tres", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=201,
            json_cuerpo={"series": [PREFIJO + "001", PREFIJO + "002", PREFIJO + "003"]},
            objetivo="Alta de numeros de serie de un lote (RF-05).", verifica=[("3 registradas", lambda r: r.json["registradas"] == 3)],
            efecto=[("las series quedan sin venta", f"SELECT numero_serie, lote_id, venta_detalle_id FROM series_producto WHERE numero_serie LIKE '{PREFIJO}%' ORDER BY 1"),
                    ("la alta queda en la bitacora", "SELECT accion, entidad, detalle FROM bitacora WHERE accion = 'alta_series' ORDER BY id DESC LIMIT 1")])
-    c.caso("series 201 idempotente", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=201,
+    c.caso("series 201 idempotente", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=201,
            json_cuerpo={"series": [PREFIJO + "001", PREFIJO + "002", PREFIJO + "003"]},
            objetivo="Repetir el envio no duplica ni falla: 0 nuevas, 3 que ya existian.",
            verifica=[("0 registradas", lambda r: r.json["registradas"] == 0), ("3 ya existian", lambda r: r.json["ya_existian"] == 3)])
-    c.caso("series 201 XML", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=201, accept="application/xml",
+    c.caso("series 201 XML", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=201, accept="application/xml",
            xml="<lote_series><series><item>%s004</item></series></lote_series>" % PREFIJO,
            objetivo="La misma alta en XML, validada contra su XSD (RF-31).", verifica=[("1 registrada", lambda r: "<registradas>1</registradas>" in r.texto)])
-    c.caso("series 400 formato invalido", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=400,
+    c.caso("series 400 formato invalido", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=400,
            json_cuerpo={"series": ["serie con espacios", PREFIJO + "OK"]}, objetivo="Cada serie son 1 a 60 caracteres: letras, numeros, punto, guion.",
            verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion"), ("senala la posicion", lambda r: r.json["error"]["detalles"][0]["campo"] == "series[0]")])
-    c.caso("series 400 repetidas en la lista", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=400,
+    c.caso("series 400 repetidas en la lista", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=400,
            json_cuerpo={"series": [PREFIJO + "R", PREFIJO + "R"]}, objetivo="Una lista con series repetidas se rechaza.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
     c.caso("series 404 lote inexistente", "POST", f"{API}/lotes/999999/series", rol="admin", espera=404,
            json_cuerpo={"series": [PREFIJO + "Z"]}, objetivo="No se dan de alta series en un lote que no existe.", verifica=[("tipo no_encontrado", lambda r: tipo_error(r) == "no_encontrado")])
+    c.caso("series 201 en el lote de la demo (para la linea saturada)", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=201,
+           json_cuerpo={"series": [PREFIJO + "SAT"]}, objetivo="Una serie del lote problematico, cuyas lineas de venta ya tienen todas sus series.",
+           verifica=[("1 registrada", lambda r: r.json["registradas"] == 1)])
     c.caso("series 201 en otro lote (prepara el conflicto)", "POST", f"{API}/lotes/{{otro_lote}}/series", rol="admin", espera=201,
            json_cuerpo={"series": [PREFIJO + "AJENA"]}, objetivo="Una serie de otro lote, para probar que no se puede reasignar.", verifica=[("1 registrada", lambda r: r.json["registradas"] == 1)])
-    c.caso("series 409 ya pertenece a otro lote", "POST", f"{API}/lotes/{{lote}}/series", rol="admin", espera=409,
+    c.caso("series 409 ya pertenece a otro lote", "POST", f"{API}/lotes/{{lote_v}}/series", rol="admin", espera=409,
            json_cuerpo={"series": [PREFIJO + "AJENA"]}, objetivo="Un numero de serie es unico: no se mueve de un lote a otro (RN-10).",
            verifica=[("tipo serie_duplicada", lambda r: tipo_error(r) == "serie_duplicada")])
 
@@ -123,13 +132,13 @@ def ejecutar(c):
     c.caso("serie 200 en almacen", "GET", f"{API}/series/{PREFIJO}001", rol="analista",
            objetivo="Una serie sin venta esta en almacen: su recorrido termina en el lote.",
            verifica=[("estado en_almacen", lambda r: r.json["estado"] == "en_almacen"), ("sin venta", lambda r: r.json["venta"] is None),
-                     ("trae lote y proveedor", lambda r: r.json["numero_lote"] == LOTE and r.json["proveedor"])])
+                     ("trae lote y proveedor", lambda r: r.json["numero_lote"] == c.ctx["numero_v"] and r.json["proveedor"])])
     c.caso("serie 400 formato invalido", "GET", f"{API}/series/serie%20invalida", rol="analista", espera=400,
            objetivo="El numero de serie se valida antes de consultar (RNF-11).", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
     c.caso("serie 404 inexistente", "GET", f"{API}/series/NO-EXISTE-999", rol="analista", espera=404, objetivo="Una serie inexistente responde 404.",
            verifica=[("tipo no_encontrado", lambda r: tipo_error(r) == "no_encontrado")])
     c.caso("vincular serie 403 analista", "PATCH", f"{API}/series/{PREFIJO}001/venta", rol="analista", espera=403,
-           json_cuerpo={"venta_detalle_id": c.ctx["det1"]}, objetivo="Ligar una serie a una venta es de Administrador y Operador de Almacen.",
+           json_cuerpo={"venta_detalle_id": c.ctx["libre1"]}, objetivo="Ligar una serie a una venta es de Administrador y Operador de Almacen.",
            verifica=[("tipo sin_permiso", lambda r: tipo_error(r) == "sin_permiso")])
     c.caso("vincular serie 400 id invalido", "PATCH", f"{API}/series/{PREFIJO}001/venta", rol="almacen", espera=400,
            json_cuerpo={"venta_detalle_id": "uno"}, objetivo="El id de la linea es un entero positivo.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
@@ -138,24 +147,27 @@ def ejecutar(c):
     c.caso("vincular serie 409 linea de otro lote", "PATCH", f"{API}/series/{PREFIJO}002/venta", rol="almacen", espera=409,
            json_cuerpo={"venta_detalle_id": c.ctx["det_otro"]}, objetivo="Una serie solo se liga a una venta de su propio lote (RN-10).",
            verifica=[("tipo lote_distinto", lambda r: tipo_error(r) == "lote_distinto")])
+    c.caso("vincular serie 409 linea sin cupo", "PATCH", f"{API}/series/{PREFIJO}SAT/venta", rol="almacen", espera=409,
+           json_cuerpo={"venta_detalle_id": c.ctx["det1"]}, objetivo="No hay mas series que unidades vendidas en una linea (RN-10): esa linea ya tiene todas las suyas.",
+           verifica=[("tipo sin_unidades", lambda r: tipo_error(r) == "sin_unidades")])
     c.caso("vincular serie 200 por el Operador de Almacen", "PATCH", f"{API}/series/{PREFIJO}001/venta", rol="almacen",
-           json_cuerpo={"venta_detalle_id": c.ctx["det1"]}, objetivo="La serie sale en una venta concreta; de ahi se llega a la tienda y a la devolucion.",
-           verifica=[("queda ligada", lambda r: r.json["venta_detalle_id"] == c.ctx["det1"])],
+           json_cuerpo={"venta_detalle_id": c.ctx["libre1"]}, objetivo="La serie sale en una venta concreta; de ahi se llega a la tienda y a la devolucion.",
+           verifica=[("queda ligada", lambda r: r.json["venta_detalle_id"] == c.ctx["libre1"])],
            efecto=[("la serie ligada", f"SELECT numero_serie, venta_detalle_id FROM series_producto WHERE numero_serie = '{PREFIJO}001'"),
                    ("la vinculacion en la bitacora", "SELECT accion, entidad, detalle FROM bitacora WHERE accion = 'serie_vendida' ORDER BY id DESC LIMIT 1")])
     c.caso("vincular serie 200 idempotente", "PATCH", f"{API}/series/{PREFIJO}001/venta", rol="admin",
-           json_cuerpo={"venta_detalle_id": c.ctx["det1"]}, objetivo="Repetir la misma vinculacion no cambia nada.", verifica=[("sin cambios", lambda r: r.json["sin_cambios"] is True)])
+           json_cuerpo={"venta_detalle_id": c.ctx["libre1"]}, objetivo="Repetir la misma vinculacion no cambia nada.", verifica=[("sin cambios", lambda r: r.json["sin_cambios"] is True)])
     c.caso("vincular serie 200 XML", "PATCH", f"{API}/series/{PREFIJO}003/venta", rol="admin", accept="application/xml",
-           xml="<serie_venta><venta_detalle_id>%d</venta_detalle_id></serie_venta>" % c.ctx["det2"],
+           xml="<serie_venta><venta_detalle_id>%d</venta_detalle_id></serie_venta>" % c.ctx["libre1"],
            objetivo="La misma vinculacion en XML.", verifica=[("es XML", lambda r: r.tipo.startswith("application/xml"))])
     c.caso("vincular serie 409 ya ligada a otra venta", "PATCH", f"{API}/series/{PREFIJO}001/venta", rol="admin", espera=409,
-           json_cuerpo={"venta_detalle_id": c.ctx["det2"]}, objetivo="Una serie vendida no se reasigna a otra venta.",
+           json_cuerpo={"venta_detalle_id": c.ctx["libre2"]}, objetivo="Una serie vendida no se reasigna a otra venta.",
            verifica=[("tipo serie_vendida", lambda r: tipo_error(r) == "serie_vendida")])
     c.caso("serie 200 devuelta: recorrido completo", "GET", f"{API}/series/{PREFIJO}001", rol="inspector",
            objetivo="Del numero de serie a la tienda, la venta y todo el recorrido de su devolucion: la trazabilidad de punta a punta (RF-05).",
            verifica=[("estado devuelta", lambda r: r.json["estado"] == "devuelta"), ("trae la venta y la tienda", lambda r: r.json["venta"]["tienda"] and r.json["venta"]["folio_venta"]),
                      ("trae el recorrido de la devolucion", lambda r: len(r.json["devoluciones"]) >= 1 and "recorrido" in r.json["devoluciones"][0])])
-    c.caso("serie 200 vendida", "GET", f"{API}/series/{PREFIJO}003", rol="analista",
+    c.caso("serie 200 de otra serie ligada", "GET", f"{API}/series/{PREFIJO}003", rol="analista",
            objetivo="Una serie ligada a una venta sin devoluciones esta vendida (o devuelta si esa linea ya tuvo una).",
            verifica=[("estado vendida o devuelta", lambda r: r.json["estado"] in ("vendida", "devuelta")), ("trae la venta", lambda r: r.json["venta"] is not None)])
 
