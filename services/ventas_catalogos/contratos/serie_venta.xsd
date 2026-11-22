@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Liga una serie a la linea de venta (PATCH /api/v1/trazabilidad/series/{serie}/venta). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="serie_venta">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="venta_detalle_id" type="xs:positiveInteger"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

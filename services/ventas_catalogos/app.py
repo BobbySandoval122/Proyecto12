@@ -9,6 +9,7 @@ from datetime import date
 from flask import Blueprint, Flask, g, request
 
 from shared import docs, respuestas
+from trazabilidad import api_trazabilidad
 from shared.infra import (cerrar_conexion, consultar, ejecutar,
                           registrar_bitacora, salud_postgres, salud_redis)
 from shared.paginacion import leer_paginacion, paginar
@@ -279,6 +280,7 @@ def create_app():
     app.teardown_appcontext(cerrar_conexion)
     app.register_blueprint(api_ventas)
     app.register_blueprint(api_catalogos)
+    app.register_blueprint(api_trazabilidad)
     docs.registrar(app,os.path.join(os.path.dirname(__file__),"openapi.yaml"))
 
     @app.get("/health")

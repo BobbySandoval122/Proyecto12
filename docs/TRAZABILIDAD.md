@@ -18,6 +18,7 @@
 | RNF-27 | Dockerfile independiente y entradas nuevas de `docker-compose.yml` | `docker compose config` y despliegue VM |
 | RF-05, RF-06 | `services/ventas_catalogos`: ventas y siete catalogos con listas blancas | `services/ventas_catalogos/tests/test_reglas.py` |
 | RF-09 | `services/evidencias`: comentario JSON/XML y archivos privados con metadatos MongoDB | `services/evidencias/tests/test_seguridad_archivos.py` |
+| RF-05, RF-23, RF-24; RN-09, RN-10 | Tercer parcial, dominio 9 (lotes-trazabilidad, dentro de `ventas-catalogos` 8006): numeros de serie por lote (`db/migrations/040_series_trazabilidad.sql`), trazabilidad de lote y de serie hasta tienda, venta y recorrido de cada devolucion, y tasas de devolucion por proveedor, tienda, producto, lote y ruta. Datos de la demo: lote `L-2026-PROB-01` en `scripts/seed_demo.py` | `services/ventas_catalogos/trazabilidad.py`, `reglas.py`; pruebas `tests/test_trazabilidad.py` y `tests/test_integracion_trazabilidad.py` (VM) |
 | RF-23, RF-26, RF-30 | `services/analisis_auditoria`: snapshot, Pareto MongoDB, cache Redis y consulta de bitacora | `services/analisis_auditoria/tests/test_pareto.py` |
 | RF-32 | `apps/web/app/microservicios.py` y `/integracion/servicios` consultan los ocho health checks | `apps/web/app/tests/test_microservicios.py` |
 | Integracion web/API | `apps/web/app/api_client.py` y blueprints web: JWT/refresh y flujo funcional por HTTP | `apps/web/app/tests/test_api_client.py` y prueba E2E en VM |
