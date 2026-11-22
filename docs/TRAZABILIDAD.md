@@ -18,6 +18,7 @@
 | RNF-27 | Dockerfile independiente y entradas nuevas de `docker-compose.yml` | `docker compose config` y despliegue VM |
 | RF-05, RF-06 | `services/ventas_catalogos`: ventas y siete catalogos con listas blancas | `services/ventas_catalogos/tests/test_reglas.py` |
 | RF-09 | `services/evidencias`: comentario JSON/XML y archivos privados con metadatos MongoDB | `services/evidencias/tests/test_seguridad_archivos.py` |
+| RF-24, RF-26, RF-27; RN-09, RN-12 | Tercer parcial, dominio 13: `services/proveedores` (8013). Proveedores con lo que surten e indicadores de calidad (tasa de devolucion, inspecciones no aptas, costo, tiempo de respuesta, semaforo con muestra minima); reclamaciones con folio, estados controlados, linea de tiempo inmutable y cierre con resolucion y monto recuperado (`db/migrations/042_reclamaciones_proveedor.sql`) | `services/proveedores/tests/` (reglas, XSD y seguridad en cualquier maquina; `test_integracion.py` en la VM) |
 | RF-23, RF-26, RF-30 | `services/analisis_auditoria`: snapshot, Pareto MongoDB, cache Redis y consulta de bitacora | `services/analisis_auditoria/tests/test_pareto.py` |
 | RF-32 | `apps/web/app/microservicios.py` y `/integracion/servicios` consultan los ocho health checks | `apps/web/app/tests/test_microservicios.py` |
 | Integracion web/API | `apps/web/app/api_client.py` y blueprints web: JWT/refresh y flujo funcional por HTTP | `apps/web/app/tests/test_api_client.py` y prueba E2E en VM |

@@ -730,3 +730,30 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 **Documento.** `docs/MONOLITICO_VS_DISTRIBUIDO.md`: donde vive cada regla en los
 dos modos y por que la caida de una API no duplica operaciones.
 
+
+## 2026-11-21 — Proveedores y reclamaciones (Persona 4, dominio 13)
+
+**Decision.** Servicio propio en el puerto 8013 que NO duplica el alta de
+proveedores: el catalogo sigue en `ventas-catalogos` (8006) y aqui se consulta,
+se mide y se reclama. "Productos que surten" se deduce de `productos` y
+`lotes`, sin tabla nueva, porque un proveedor puede surtir un producto sin ser
+su proveedor principal.
+
+**Reclamaciones.** Tres tablas (migracion 042): la reclamacion con folio
+generado por la base (`RCL-AAAA-####`, como el de devoluciones), las devoluciones
+que la respaldan y una linea de tiempo inmutable. Una restriccion de la base
+obliga a que una reclamacion cerrada diga como termino y a que una abierta no
+traiga resolucion. Que una devolucion no este en dos reclamaciones abiertas
+cruza dos tablas y no cabe en un indice, asi que el servicio bloquea las filas
+de las devoluciones al crear. Solo se acepta o rechaza lo que el proveedor ya
+respondio; retirarla se puede en cualquier momento.
+
+**Indicadores y semaforo.** La tasa es unidades devueltas entre vendidas, con
+el mismo conteo que el panel de causas. El semaforo compara contra el promedio
+de todos los proveedores (atencion desde 1.25 veces, critico desde 2) y devuelve
+`sin_datos` con menos de 20 unidades vendidas: una tasa con pocas ventas
+asusta sin informar. Es una guia para revisar, no un juicio sobre el proveedor
+(RN-09). Los montos se manejan como decimales con dos cifras, nunca como float.
+
+**Acceso.** Por tratar costos y reclamos, solo lo leen Administrador, Analista,
+Supervisor y Encargado de Reembolsos; Cliente e Inspector reciben 403.

@@ -25,7 +25,7 @@ nuevos.
 | 8008 | analisis-auditoria | 8 analisis-auditoria: se propone dejar aqui solo **auditoria** y mover el analisis a 8018 | existente |
 | 8010 | clasificacion-motivos | 10 clasificacion de motivos | nuevo |
 | 8011 | causa-raiz | 11 causa raiz + 12 acciones correctivas (CAPA) | nuevo |
-| 8013 | proveedores | 13 proveedores | nuevo |
+| 8013 | proveedores | 13 proveedores | **implementado** |
 | 8014 | disposicion-inventario | 14 disposicion + 15 inventario inverso | nuevo |
 | 8017 | notificaciones | 17 notificaciones | nuevo |
 | 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | nuevo |

@@ -258,6 +258,25 @@ services:
       timeout: 5s
       retries: 3
 
+  proveedores:
+    # Tercer parcial, dominio 13: proveedores, lo que surten, reclamaciones con
+    # seguimiento e indicadores de calidad (RF-24, RF-26).
+    build:
+      context: .
+      dockerfile: services/proveedores/Dockerfile
+    container_name: devoluciones_proveedores
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8013:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   integraciones-monitoreo:
     # Tercer parcial, dominios 21 y 22: integraciones con POS, ERP, WMS,
     # transportistas y finanzas, y monitoreo de toda la plataforma. Revisa la
