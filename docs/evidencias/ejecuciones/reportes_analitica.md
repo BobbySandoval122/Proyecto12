@@ -1,7 +1,7 @@
 # Evidencia con curl - `reportes-analitica`
 
-Ejecutada en la VM el 2026-11-22 18:19 UTC con `scripts/evidencias/ejecutar.py reportes` (commit `2db954f`).
-Casos: **53**, correctos: **53**, con falla: **0**. Los tokens y la contrasena de demo estan ocultos; la IP de la VM se muestra como `$VM_HOST`.
+Ejecutada en la VM el 2026-11-22 18:34 UTC con `scripts/evidencias/ejecutar.py reportes` (commit `79dabf1`).
+Casos: **60**, correctos: **60**, con falla: **0**. Los tokens y la contrasena de demo estan ocultos; la IP de la VM se muestra como `$VM_HOST`.
 
 Cada respuesta es la que devolvio el servicio: nada se pego a mano. Un caso que no cumple lo esperado queda marcado como falla, no se omite.
 
@@ -79,6 +79,13 @@ El login admite 10 intentos por minuto por IP (RNF-13); el token dura 15 minutos
 | [P4-REP-51](#p4-rep-51) | correcto | 400 | anomalias 400 tipo invalido |
 | [P4-REP-52](#p4-rep-52) | correcto | 200 | alertas de fraude 200 |
 | [P4-REP-53](#p4-rep-53) | correcto | 403 | alertas de fraude 403 supervisor |
+| [P4-REP-54](#p4-rep-54) | correcto | 200 | factores 200: proveedor por tienda |
+| [P4-REP-55](#p4-rep-55) | correcto | 200 | factores 200: el lote problematico destaca |
+| [P4-REP-56](#p4-rep-56) | correcto | 200 | factores 200 XML |
+| [P4-REP-57](#p4-rep-57) | correcto | 400 | factores 400 mismo factor dos veces |
+| [P4-REP-58](#p4-rep-58) | correcto | 400 | factores 400 ruta no tiene ventas |
+| [P4-REP-59](#p4-rep-59) | correcto | 400 | factores 400 limite fuera de rango |
+| [P4-REP-60](#p4-rep-60) | correcto | 403 | factores 403 cliente |
 
 ## P4-REP-01
 
@@ -98,7 +105,7 @@ Respuesta - **200 OK** (17 ms, 151 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 151
-X-Correlation-ID: 07187c7b567047b5
+X-Correlation-ID: 8f33f4b683c14040
 ```
 
 ```json
@@ -139,12 +146,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/health" \
   -H "Accept: application/xml"
 ```
 
-Respuesta - **200 OK** (21 ms, 254 bytes):
+Respuesta - **200 OK** (15 ms, 254 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
 Content-Length: 254
-X-Correlation-ID: da3d4e20f54b4d1a
+X-Correlation-ID: d7f724b154174db9
 ```
 
 ```xml
@@ -171,12 +178,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/docs" \
   -H "Accept: text/html"
 ```
 
-Respuesta - **200 OK** (9 ms, 430 bytes):
+Respuesta - **200 OK** (8 ms, 430 bytes):
 
 ```http
 Content-Type: text/html; charset=utf-8
 Content-Length: 430
-X-Correlation-ID: 58a5c81bede24571
+X-Correlation-ID: fb7142b66e474612
 ```
 
 ```text
@@ -208,12 +215,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/openapi.json" \
   -H "Accept: application/json"
 ```
 
-Respuesta - **200 OK** (11 ms, 8199 bytes):
+Respuesta - **200 OK** (7 ms, 9667 bytes):
 
 ```http
 Content-Type: application/json
-Content-Length: 8199
-X-Correlation-ID: 5efe60141e9d415e
+Content-Length: 9667
+X-Correlation-ID: e6607835b89243d7
 ```
 
 ```json
@@ -287,7 +294,7 @@ X-Correlation-ID: 5efe60141e9d415e
                 "csv",
                 "xlsx",
                 "pdf"
-... (recortado: 531 lineas mas)
+... (recortado: 624 lineas mas)
 ```
 
 Verificaciones:
@@ -309,12 +316,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes" \
   -H "Accept: application/json"
 ```
 
-Respuesta - **401 UNAUTHORIZED** (10 ms, 162 bytes):
+Respuesta - **401 UNAUTHORIZED** (7 ms, 162 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 162
-X-Correlation-ID: 996a6e9309c143f7
+X-Correlation-ID: 75af15d59eaa4b57
 ```
 
 ```json
@@ -324,7 +331,7 @@ X-Correlation-ID: 996a6e9309c143f7
     "tipo": "no_autenticado",
     "mensaje": "Falta el header 'Authorization: Bearer <token>'.",
     "detalles": null,
-    "correlation_id": "996a6e9309c143f7"
+    "correlation_id": "75af15d59eaa4b57"
   }
 }
 ```
@@ -348,12 +355,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes" \
   -H "Authorization: Bearer no.es.un.jwt"
 ```
 
-Respuesta - **401 UNAUTHORIZED** (10 ms, 136 bytes):
+Respuesta - **401 UNAUTHORIZED** (7 ms, 136 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 136
-X-Correlation-ID: c9916f1b33b7416d
+X-Correlation-ID: 8e0937b097a34b8e
 ```
 
 ```json
@@ -363,7 +370,7 @@ X-Correlation-ID: c9916f1b33b7416d
     "tipo": "token_invalido",
     "mensaje": "El token no es valido.",
     "detalles": null,
-    "correlation_id": "c9916f1b33b7416d"
+    "correlation_id": "8e0937b097a34b8e"
   }
 }
 ```
@@ -387,12 +394,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes" \
   -H "Authorization: Bearer $TOKEN_CLIENTE"
 ```
 
-Respuesta - **403 FORBIDDEN** (12 ms, 271 bytes):
+Respuesta - **403 FORBIDDEN** (10 ms, 271 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 271
-X-Correlation-ID: 575f8b7c065b4050
+X-Correlation-ID: c1b31e1427a8464b
 ```
 
 ```json
@@ -410,7 +417,7 @@ X-Correlation-ID: 575f8b7c065b4050
         "Encargado de Reembolsos"
       ]
     },
-    "correlation_id": "575f8b7c065b4050"
+    "correlation_id": "c1b31e1427a8464b"
   }
 }
 ```
@@ -434,12 +441,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/tendencias" \
   -H "Authorization: Bearer $TOKEN_INSPECTOR"
 ```
 
-Respuesta - **403 FORBIDDEN** (10 ms, 273 bytes):
+Respuesta - **403 FORBIDDEN** (9 ms, 273 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 273
-X-Correlation-ID: 0d7dca0887184fa2
+X-Correlation-ID: aae53d28917a41a4
 ```
 
 ```json
@@ -457,7 +464,7 @@ X-Correlation-ID: 0d7dca0887184fa2
         "Encargado de Reembolsos"
       ]
     },
-    "correlation_id": "0d7dca0887184fa2"
+    "correlation_id": "aae53d28917a41a4"
   }
 }
 ```
@@ -481,12 +488,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (12 ms, 2160 bytes):
+Respuesta - **200 OK** (9 ms, 2160 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 2160
-X-Correlation-ID: 9bb7b9a8857a4977
+X-Correlation-ID: d74383c8d0d14ad8
 ```
 
 ```json
@@ -583,19 +590,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/devoluciones?por_pagina
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (42 ms, 2077 bytes):
+Respuesta - **200 OK** (38 ms, 2077 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 2077
-X-Correlation-ID: 0782fc217aff435e
+X-Correlation-ID: 8662572e7de64697
 ```
 
 ```json
 {
   "reporte": "devoluciones",
   "titulo": "Reporte de devoluciones",
-  "generado_en": "2026-11-22T18:19:22+00:00",
+  "generado_en": "2026-11-22T18:34:48+00:00",
   "filtros": {},
   "columnas": [
     {
@@ -698,17 +705,17 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/devoluciones?por_pagina
   -H "Authorization: Bearer $TOKEN_SUPERVISOR"
 ```
 
-Respuesta - **200 OK** (135 ms, 2194 bytes):
+Respuesta - **200 OK** (41 ms, 2194 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
 Content-Length: 2194
-X-Correlation-ID: 370e4a290b924ead
+X-Correlation-ID: 2c3f02c45ac442ff
 ```
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
-<reporte><reporte>devoluciones</reporte><titulo>Reporte de devoluciones</titulo><generado_en>2026-11-22T18:19:23+00:00</generado_en><filtros /><columnas><item><clave>folio</clave><titulo>Folio</titulo><tipo>texto</tipo></item><item><clave>fecha_solicitud</clave><titulo>Fecha</titulo><tipo>fecha</tipo></item><item><clave>estado</clave><titulo>Estado</titulo><tipo>texto</tipo></item><item><clave>motivo</clave><titulo>Motivo</titulo><tipo>texto</tipo></item><item><clave>producto</clave><titulo>Producto</titulo><tipo>texto</tipo></item><item><clave>lote</clave><titulo>Lote</titulo><tipo>texto</tipo></item><item><clave>proveedor</clave><titulo>Proveedor</titulo><tipo>texto</tipo></item><item><clave>tienda</clave><titulo>Tienda</titulo><tipo>texto</tipo></item><item><clave>cantidad_devuelta</clave><titulo>Unidades</titulo><tipo>entero</tipo></item><item><clave>costo_total</clave><titulo>Costo total</titulo><tipo>dinero</tipo></item></columnas><datos><item><folio>DEV-2026-0087</folio><fecha_solicitud>2026-10-23</fecha_solicitud><estado>solicitada</estado><motivo>Cadena de frio rota</motivo><producto>Arroz blanco 1 kg</producto><lote>L-2026-301</lote><proveedor>Abarrotes Monterrey</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>0.0</costo_total></item><item><folio>DEV-2026-0086</folio><fecha_solicitud>2026-10-23</fecha_solicitud><estado>cerrada</estado><motivo>Caducidad vencida</motivo><producto>Yogurt natural 125 g</producto><lote>L-2026-061</lote><proveedor>Lacteos del Norte</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>192.1</costo_total></item><item><folio>DEV-2026-0085</folio><fecha_solicitud>2026-10-22</fecha_solicitud><estado>solicitada</estado><motivo>Calidad inferior</motivo><producto>Arroz blanco 1 kg</producto><lote>L-2026-301</lote><proveedor>Abarrotes Monterrey</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>0.0</costo_total></item></datos><paginacion><pagina>1</pagina><por_pagina>3</por_pagina><total>46</total><paginas>16</paginas></paginacion></reporte>
+<reporte><reporte>devoluciones</reporte><titulo>Reporte de devoluciones</titulo><generado_en>2026-11-22T18:34:49+00:00</generado_en><filtros /><columnas><item><clave>folio</clave><titulo>Folio</titulo><tipo>texto</tipo></item><item><clave>fecha_solicitud</clave><titulo>Fecha</titulo><tipo>fecha</tipo></item><item><clave>estado</clave><titulo>Estado</titulo><tipo>texto</tipo></item><item><clave>motivo</clave><titulo>Motivo</titulo><tipo>texto</tipo></item><item><clave>producto</clave><titulo>Producto</titulo><tipo>texto</tipo></item><item><clave>lote</clave><titulo>Lote</titulo><tipo>texto</tipo></item><item><clave>proveedor</clave><titulo>Proveedor</titulo><tipo>texto</tipo></item><item><clave>tienda</clave><titulo>Tienda</titulo><tipo>texto</tipo></item><item><clave>cantidad_devuelta</clave><titulo>Unidades</titulo><tipo>entero</tipo></item><item><clave>costo_total</clave><titulo>Costo total</titulo><tipo>dinero</tipo></item></columnas><datos><item><folio>DEV-2026-0087</folio><fecha_solicitud>2026-10-23</fecha_solicitud><estado>solicitada</estado><motivo>Cadena de frio rota</motivo><producto>Arroz blanco 1 kg</producto><lote>L-2026-301</lote><proveedor>Abarrotes Monterrey</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>0.0</costo_total></item><item><folio>DEV-2026-0086</folio><fecha_solicitud>2026-10-23</fecha_solicitud><estado>cerrada</estado><motivo>Caducidad vencida</motivo><producto>Yogurt natural 125 g</producto><lote>L-2026-061</lote><proveedor>Lacteos del Norte</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>192.1</costo_total></item><item><folio>DEV-2026-0085</folio><fecha_solicitud>2026-10-22</fecha_solicitud><estado>solicitada</estado><motivo>Calidad inferior</motivo><producto>Arroz blanco 1 kg</producto><lote>L-2026-301</lote><proveedor>Abarrotes Monterrey</proveedor><tienda>Tienda Valle Oriente</tienda><cantidad_devuelta>1</cantidad_devuelta><costo_total>0.0</costo_total></item></datos><paginacion><pagina>1</pagina><por_pagina>3</por_pagina><total>46</total><paginas>16</paginas></paginacion></reporte>
 ```
 
 Verificaciones:
@@ -731,19 +738,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/devoluciones?desde=2026
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (99 ms, 1603 bytes):
+Respuesta - **200 OK** (38 ms, 1603 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1603
-X-Correlation-ID: 5e24ba77ac29481a
+X-Correlation-ID: a23662e6e710440a
 ```
 
 ```json
 {
   "reporte": "devoluciones",
   "titulo": "Reporte de devoluciones",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "desde": "2026-01-01",
     "hasta": "2026-11-22",
@@ -833,19 +840,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/costos?por_pagina=5" \
   -H "Authorization: Bearer $TOKEN_REEMBOLSOS"
 ```
 
-Respuesta - **200 OK** (29 ms, 2110 bytes):
+Respuesta - **200 OK** (23 ms, 2110 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 2110
-X-Correlation-ID: 37f3d3245b7a4fe6
+X-Correlation-ID: 8372174e9731419b
 ```
 
 ```json
 {
   "reporte": "costos",
   "titulo": "Costos por devolucion y etapa",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {},
   "columnas": [
     {
@@ -934,19 +941,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/tasas?por=proveedor" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (26 ms, 1016 bytes):
+Respuesta - **200 OK** (27 ms, 1016 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1016
-X-Correlation-ID: 8f421d75f08e4d98
+X-Correlation-ID: 006167980a3d4193
 ```
 
 ```json
 {
   "reporte": "tasas",
   "titulo": "Tasa de devolucion",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "por": "proveedor"
   },
@@ -1035,19 +1042,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/tasas?por=tienda" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (26 ms, 890 bytes):
+Respuesta - **200 OK** (25 ms, 890 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 890
-X-Correlation-ID: 455471b7235e414f
+X-Correlation-ID: 532d5c252b6746e5
 ```
 
 ```json
 {
   "reporte": "tasas",
   "titulo": "Tasa de devolucion",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "por": "tienda"
   },
@@ -1132,19 +1139,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/pareto?dimension=motivo
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (28 ms, 1255 bytes):
+Respuesta - **200 OK** (30 ms, 1255 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1255
-X-Correlation-ID: ec872b7e36834137
+X-Correlation-ID: 268c4120a9404168
 ```
 
 ```json
 {
   "reporte": "pareto",
   "titulo": "Pareto de devoluciones",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "dimension": "motivo",
     "medida": "frecuencia"
@@ -1233,19 +1240,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/pareto?dimension=provee
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (29 ms, 960 bytes):
+Respuesta - **200 OK** (31 ms, 960 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 960
-X-Correlation-ID: 8778a935b6e144e4
+X-Correlation-ID: dba90ccba27c4c4e
 ```
 
 ```json
 {
   "reporte": "pareto",
   "titulo": "Pareto de devoluciones",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "dimension": "proveedor",
     "medida": "costo"
@@ -1339,14 +1346,14 @@ Respuesta - **200 OK** (27 ms, 1611 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 1611
-X-Correlation-ID: ac71001b9c3143fe
+X-Correlation-ID: 814b019f475740a4
 ```
 
 ```json
 {
   "reporte": "tendencia",
   "titulo": "Tendencia mensual",
-  "generado_en": "2026-11-22T18:19:23+00:00",
+  "generado_en": "2026-11-22T18:34:49+00:00",
   "filtros": {
     "medida": "devoluciones",
     "meses": 12
@@ -1435,12 +1442,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/inventado" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **404 NOT FOUND** (11 ms, 135 bytes):
+Respuesta - **404 NOT FOUND** (9 ms, 135 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 135
-X-Correlation-ID: 95886dc08d134e78
+X-Correlation-ID: 75d2e8c8db434f1e
 ```
 
 ```json
@@ -1450,7 +1457,7 @@ X-Correlation-ID: 95886dc08d134e78
     "tipo": "no_encontrado",
     "mensaje": "No existe ese reporte.",
     "detalles": null,
-    "correlation_id": "95886dc08d134e78"
+    "correlation_id": "75d2e8c8db434f1e"
   }
 }
 ```
@@ -1479,7 +1486,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 149 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 149
-X-Correlation-ID: b24c30aafe6348fc
+X-Correlation-ID: 556fb706de1349a3
 ```
 
 ```json
@@ -1489,7 +1496,7 @@ X-Correlation-ID: b24c30aafe6348fc
     "tipo": "validacion",
     "mensaje": "formato debe ser: json, csv, xlsx, pdf.",
     "detalles": null,
-    "correlation_id": "b24c30aafe6348fc"
+    "correlation_id": "556fb706de1349a3"
   }
 }
 ```
@@ -1518,7 +1525,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 197 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 197
-X-Correlation-ID: 1c344afac13e4702
+X-Correlation-ID: b64192cb72634796
 ```
 
 ```json
@@ -1533,7 +1540,7 @@ X-Correlation-ID: 1c344afac13e4702
         "problema": "no existe para este reporte"
       }
     ],
-    "correlation_id": "1c344afac13e4702"
+    "correlation_id": "b64192cb72634796"
   }
 }
 ```
@@ -1562,7 +1569,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 146 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 146
-X-Correlation-ID: de78989689dd4839
+X-Correlation-ID: 55c017b4b4c14b43
 ```
 
 ```json
@@ -1572,7 +1579,7 @@ X-Correlation-ID: de78989689dd4839
     "tipo": "validacion",
     "mensaje": "desde debe tener formato AAAA-MM-DD.",
     "detalles": null,
-    "correlation_id": "de78989689dd4839"
+    "correlation_id": "55c017b4b4c14b43"
   }
 }
 ```
@@ -1601,7 +1608,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 145 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 145
-X-Correlation-ID: 31fa6a547d1b4682
+X-Correlation-ID: 72b69d2090f6421f
 ```
 
 ```json
@@ -1611,7 +1618,7 @@ X-Correlation-ID: 31fa6a547d1b4682
     "tipo": "validacion",
     "mensaje": "hasta no puede ser menor que desde.",
     "detalles": null,
-    "correlation_id": "31fa6a547d1b4682"
+    "correlation_id": "72b69d2090f6421f"
   }
 }
 ```
@@ -1640,7 +1647,7 @@ Respuesta - **400 BAD REQUEST** (8 ms, 241 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 241
-X-Correlation-ID: 4d9578471c144bad
+X-Correlation-ID: 07ed9e3efdf34254
 ```
 
 ```json
@@ -1650,7 +1657,7 @@ X-Correlation-ID: 4d9578471c144bad
     "tipo": "validacion",
     "mensaje": "estado debe ser uno de: solicitada, en_revision, autorizada, rechazada, en_recoleccion, recibida, en_inspeccion, resuelta, cerrada.",
     "detalles": null,
-    "correlation_id": "4d9578471c144bad"
+    "correlation_id": "07ed9e3efdf34254"
   }
 }
 ```
@@ -1674,12 +1681,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/tendencia?meses=2" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (8 ms, 148 bytes):
+Respuesta - **400 BAD REQUEST** (7 ms, 148 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 148
-X-Correlation-ID: df827f6d539541a3
+X-Correlation-ID: 737927e64c854efc
 ```
 
 ```json
@@ -1689,7 +1696,7 @@ X-Correlation-ID: df827f6d539541a3
     "tipo": "validacion",
     "mensaje": "meses debe ser un entero entre 6 y 36.",
     "detalles": null,
-    "correlation_id": "df827f6d539541a3"
+    "correlation_id": "737927e64c854efc"
   }
 }
 ```
@@ -1713,12 +1720,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/tendencia?dimension=pro
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (7 ms, 154 bytes):
+Respuesta - **400 BAD REQUEST** (8 ms, 154 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 154
-X-Correlation-ID: 21b0d55ae91d497b
+X-Correlation-ID: 5e7dba99e2c54575
 ```
 
 ```json
@@ -1728,7 +1735,7 @@ X-Correlation-ID: 21b0d55ae91d497b
     "tipo": "validacion",
     "mensaje": "dimension y referencia_id se indican juntas.",
     "detalles": null,
-    "correlation_id": "21b0d55ae91d497b"
+    "correlation_id": "5e7dba99e2c54575"
   }
 }
 ```
@@ -1757,7 +1764,7 @@ Respuesta - **404 NOT FOUND** (16 ms, 144 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 144
-X-Correlation-ID: ed3c02041d904b4c
+X-Correlation-ID: a1748f58509d4e5f
 ```
 
 ```json
@@ -1767,7 +1774,7 @@ X-Correlation-ID: ed3c02041d904b4c
     "tipo": "no_encontrado",
     "mensaje": "No existe proveedor con ese id.",
     "detalles": null,
-    "correlation_id": "ed3c02041d904b4c"
+    "correlation_id": "a1748f58509d4e5f"
   }
 }
 ```
@@ -1796,7 +1803,7 @@ Respuesta - **200 OK** (45 ms, 6007 bytes):
 ```http
 Content-Type: text/csv; charset=utf-8
 Content-Length: 6007
-X-Correlation-ID: c88b1fda5bd24523
+X-Correlation-ID: b7829d4db0ed442a
 Content-Disposition: attachment; filename="reporte_devoluciones_20261122.csv"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -1886,12 +1893,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/devoluciones?formato=xl
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (48 ms, 5652 bytes):
+Respuesta - **200 OK** (47 ms, 5652 bytes):
 
 ```http
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 Content-Length: 5652
-X-Correlation-ID: 98e638ced1c646e5
+X-Correlation-ID: 97d80c8c16104cb7
 Content-Disposition: attachment; filename="reporte_devoluciones_20261122.xlsx"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -1922,12 +1929,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/devoluciones?formato=pd
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (69 ms, 10927 bytes):
+Respuesta - **200 OK** (43 ms, 10927 bytes):
 
 ```http
 Content-Type: application/pdf
 Content-Length: 10927
-X-Correlation-ID: 388c5a4cde434e96
+X-Correlation-ID: 6af47b4ad8b34ea8
 Content-Disposition: attachment; filename="reporte_devoluciones_20261122.pdf"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -1958,12 +1965,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/costos?formato=csv" \
   -H "Authorization: Bearer $TOKEN_REEMBOLSOS"
 ```
 
-Respuesta - **200 OK** (30 ms, 1542 bytes):
+Respuesta - **200 OK** (27 ms, 1542 bytes):
 
 ```http
 Content-Type: text/csv; charset=utf-8
 Content-Length: 1542
-X-Correlation-ID: 1460a91e78db4154
+X-Correlation-ID: c1529276eeb944a1
 Content-Disposition: attachment; filename="reporte_costos_20261122.csv"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -2024,7 +2031,7 @@ Respuesta - **200 OK** (30 ms, 3370 bytes):
 ```http
 Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 Content-Length: 3370
-X-Correlation-ID: 6b14ee172ccb4172
+X-Correlation-ID: afd9fbed888f4981
 Content-Disposition: attachment; filename="reporte_tasas_20261122.xlsx"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -2053,12 +2060,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/pareto?dimension=transp
   -H "Authorization: Bearer $TOKEN_SUPERVISOR"
 ```
 
-Respuesta - **200 OK** (34 ms, 1754 bytes):
+Respuesta - **200 OK** (35 ms, 1754 bytes):
 
 ```http
 Content-Type: application/pdf
 Content-Length: 1754
-X-Correlation-ID: e9c6406aed6341d7
+X-Correlation-ID: 07f677560d184c14
 Content-Disposition: attachment; filename="reporte_pareto_20261122.pdf"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -2087,12 +2094,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/tendencia?dimension=pro
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (28 ms, 476 bytes):
+Respuesta - **200 OK** (29 ms, 476 bytes):
 
 ```http
 Content-Type: text/csv; charset=utf-8
 Content-Length: 476
-X-Correlation-ID: 6f79c5ba74e34bd1
+X-Correlation-ID: 6faf1a61ddd34451
 Content-Disposition: attachment; filename="reporte_tendencia_20261122.csv"
 Cache-Control: no-store
 X-Content-Type-Options: nosniff
@@ -2134,13 +2141,13 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/costos?formato=csv" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **429 TOO MANY REQUESTS** (9 ms, 179 bytes):
+Respuesta - **429 TOO MANY REQUESTS** (7 ms, 179 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 179
-X-Correlation-ID: 0d8abc91153c489c
-Retry-After: 59
+X-Correlation-ID: 70595a218fb9492d
+Retry-After: 20
 ```
 
 ```json
@@ -2148,9 +2155,9 @@ Retry-After: 59
   "error": {
     "codigo": 429,
     "tipo": "demasiadas_peticiones",
-    "mensaje": "Limite de 20 peticiones en 60 s. Intenta de nuevo en 59 s.",
+    "mensaje": "Limite de 20 peticiones en 60 s. Intenta de nuevo en 20 s.",
     "detalles": null,
-    "correlation_id": "0d8abc91153c489c"
+    "correlation_id": "70595a218fb9492d"
   }
 }
 ```
@@ -2175,19 +2182,19 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/reportes/costos?por_pagina=1" \
   -H "Authorization: Bearer $TOKEN_ADMIN"
 ```
 
-Respuesta - **200 OK** (22 ms, 1110 bytes):
+Respuesta - **200 OK** (21 ms, 1110 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1110
-X-Correlation-ID: 464dc7a070884b19
+X-Correlation-ID: a77b3bb98e06409d
 ```
 
 ```json
 {
   "reporte": "costos",
   "titulo": "Costos por devolucion y etapa",
-  "generado_en": "2026-11-22T18:19:24+00:00",
+  "generado_en": "2026-11-22T18:34:50+00:00",
   "filtros": {},
   "columnas": [
     {
@@ -2276,12 +2283,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/graficas/pareto?dimension=motivo
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (35 ms, 714 bytes):
+Respuesta - **200 OK** (29 ms, 714 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 714
-X-Correlation-ID: 52537cb7821b4b70
+X-Correlation-ID: e223c95a85ed4ecc
 ```
 
 ```json
@@ -2378,12 +2385,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/graficas/tasas?por=proveedor" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (29 ms, 476 bytes):
+Respuesta - **200 OK** (25 ms, 476 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 476
-X-Correlation-ID: 231980c66baf4051
+X-Correlation-ID: 4642dcd5233642d8
 ```
 
 ```json
@@ -2453,12 +2460,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/graficas/tendencia?medida=tasa&m
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (29 ms, 536 bytes):
+Respuesta - **200 OK** (26 ms, 536 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 536
-X-Correlation-ID: 63a29e269355462f
+X-Correlation-ID: 7a0994f558544120
 ```
 
 ```json
@@ -2542,17 +2549,17 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/graficas/pareto" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **406 NOT ACCEPTABLE** (11 ms, 228 bytes):
+Respuesta - **406 NOT ACCEPTABLE** (9 ms, 228 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
 Content-Length: 228
-X-Correlation-ID: 41be11ad33734095
+X-Correlation-ID: 398dc62cdba44eda
 ```
 
 ```xml
 <?xml version='1.0' encoding='utf-8'?>
-<error><codigo>406</codigo><tipo>solo_json</tipo><mensaje>Las opciones de Highcharts solo se entregan en JSON.</mensaje><detalles /><correlation_id>41be11ad33734095</correlation_id></error>
+<error><codigo>406</codigo><tipo>solo_json</tipo><mensaje>Las opciones de Highcharts solo se entregan en JSON.</mensaje><detalles /><correlation_id>398dc62cdba44eda</correlation_id></error>
 ```
 
 Verificaciones:
@@ -2579,7 +2586,7 @@ Respuesta - **404 NOT FOUND** (8 ms, 160 bytes):
 ```http
 Content-Type: application/json
 Content-Length: 160
-X-Correlation-ID: 6852dc91e42141eb
+X-Correlation-ID: afeeb24da9a04dc8
 ```
 
 ```json
@@ -2589,7 +2596,7 @@ X-Correlation-ID: 6852dc91e42141eb
     "tipo": "no_encontrado",
     "mensaje": "Graficas disponibles: pareto, tendencia, tasas.",
     "detalles": null,
-    "correlation_id": "6852dc91e42141eb"
+    "correlation_id": "afeeb24da9a04dc8"
   }
 }
 ```
@@ -2613,12 +2620,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/graficas/tendencia?horizonte=0" 
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (27 ms, 151 bytes):
+Respuesta - **400 BAD REQUEST** (24 ms, 151 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 151
-X-Correlation-ID: 37ec8d4daf584248
+X-Correlation-ID: 217aec6bedf34e36
 ```
 
 ```json
@@ -2628,7 +2635,7 @@ X-Correlation-ID: 37ec8d4daf584248
     "tipo": "validacion",
     "mensaje": "horizonte debe ser un entero entre 1 y 6.",
     "detalles": null,
-    "correlation_id": "37ec8d4daf584248"
+    "correlation_id": "217aec6bedf34e36"
   }
 }
 ```
@@ -2652,12 +2659,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/tendencias?medida=devo
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (47 ms, 1615 bytes):
+Respuesta - **200 OK** (25 ms, 1615 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1615
-X-Correlation-ID: 7417ef0abaf0485c
+X-Correlation-ID: 8ff588b70b8f4a6f
 ```
 
 ```json
@@ -2754,12 +2761,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/tendencias?meses=6" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (36 ms, 1478 bytes):
+Respuesta - **200 OK** (26 ms, 1478 bytes):
 
 ```http
 Content-Type: application/xml; charset=utf-8
 Content-Length: 1478
-X-Correlation-ID: 9f68c5dba12348be
+X-Correlation-ID: b1ff1bae362a4526
 ```
 
 ```xml
@@ -2786,12 +2793,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/tendencias?medida=tasa
   -H "Authorization: Bearer $TOKEN_SUPERVISOR"
 ```
 
-Respuesta - **200 OK** (38 ms, 1729 bytes):
+Respuesta - **200 OK** (25 ms, 1729 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1729
-X-Correlation-ID: 2e038bc5416a4191
+X-Correlation-ID: 1cc875c8436e4ed9
 ```
 
 ```json
@@ -2888,12 +2895,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/pronosticos?medida=dev
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (41 ms, 888 bytes):
+Respuesta - **200 OK** (28 ms, 888 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 888
-X-Correlation-ID: 3d365eb243b94fbd
+X-Correlation-ID: c42869dc20e84c8f
 ```
 
 ```json
@@ -2974,12 +2981,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/pronosticos?horizonte=
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (16 ms, 151 bytes):
+Respuesta - **400 BAD REQUEST** (9 ms, 151 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 151
-X-Correlation-ID: 7a939fb07e7646f9
+X-Correlation-ID: ce5ffb71942b4b6d
 ```
 
 ```json
@@ -2989,7 +2996,7 @@ X-Correlation-ID: 7a939fb07e7646f9
     "tipo": "validacion",
     "mensaje": "horizonte debe ser un entero entre 1 y 6.",
     "detalles": null,
-    "correlation_id": "7a939fb07e7646f9"
+    "correlation_id": "ce5ffb71942b4b6d"
   }
 }
 ```
@@ -3013,12 +3020,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/anomalias?tipo=objetos
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (37 ms, 317 bytes):
+Respuesta - **200 OK** (25 ms, 317 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 317
-X-Correlation-ID: 652b7ca937874010
+X-Correlation-ID: a18a7ef4f7f44757
 ```
 
 ```json
@@ -3055,12 +3062,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/anomalias?tipo=objetos
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (38 ms, 313 bytes):
+Respuesta - **200 OK** (27 ms, 313 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 313
-X-Correlation-ID: 6a0875f1547f4b23
+X-Correlation-ID: 5c39d12c3d2d421b
 ```
 
 ```json
@@ -3095,12 +3102,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/anomalias?tipo=meses&m
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (34 ms, 1382 bytes):
+Respuesta - **200 OK** (27 ms, 1382 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 1382
-X-Correlation-ID: 3c030c57e1844f79
+X-Correlation-ID: 03a5a2b11d06417a
 ```
 
 ```json
@@ -3196,12 +3203,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/anomalias?tipo=planeta
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **400 BAD REQUEST** (11 ms, 147 bytes):
+Respuesta - **400 BAD REQUEST** (9 ms, 147 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 147
-X-Correlation-ID: 8c73d2ffc6e5470e
+X-Correlation-ID: 3c18ef03f7624166
 ```
 
 ```json
@@ -3211,7 +3218,7 @@ X-Correlation-ID: 8c73d2ffc6e5470e
     "tipo": "validacion",
     "mensaje": "tipo debe ser uno de: objetos, meses.",
     "detalles": null,
-    "correlation_id": "8c73d2ffc6e5470e"
+    "correlation_id": "3c18ef03f7624166"
   }
 }
 ```
@@ -3235,12 +3242,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/alertas-fraude" \
   -H "Authorization: Bearer $TOKEN_ANALISTA"
 ```
 
-Respuesta - **200 OK** (45 ms, 690 bytes):
+Respuesta - **200 OK** (29 ms, 690 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 690
-X-Correlation-ID: dbfa762409584446
+X-Correlation-ID: 1ee326983f7242c1
 ```
 
 ```json
@@ -3317,12 +3324,12 @@ curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/alertas-fraude" \
   -H "Authorization: Bearer $TOKEN_SUPERVISOR"
 ```
 
-Respuesta - **403 FORBIDDEN** (14 ms, 235 bytes):
+Respuesta - **403 FORBIDDEN** (10 ms, 235 bytes):
 
 ```http
 Content-Type: application/json
 Content-Length: 235
-X-Correlation-ID: cc579282a0bd4cfb
+X-Correlation-ID: cbeb002974014a75
 ```
 
 ```json
@@ -3338,7 +3345,375 @@ X-Correlation-ID: cc579282a0bd4cfb
         "Analista de Devoluciones"
       ]
     },
-    "correlation_id": "cc579282a0bd4cfb"
+    "correlation_id": "cbeb002974014a75"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 403
+- ok: tipo sin_permiso
+
+## P4-REP-54
+
+**factores 200: proveedor por tienda**
+
+Objetivo: Cruza dos factores: la tasa de cada combinacion con su intervalo de Wilson del 95 % y la tasa de cada factor por separado (RF-23, RF-24).
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?por=proveedor&con=tienda&limite=5" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **200 OK** (27 ms, 2407 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 2407
+X-Correlation-ID: ebf45915c8914c64
+```
+
+```json
+{
+  "por": "proveedor",
+  "con": "tienda",
+  "estado": "ok",
+  "tasa_promedio_pct": 28.86,
+  "muestra_minima_unidades": 20,
+  "omitidas_por_muestra": 7,
+  "distinguibles": 2,
+  "celdas": [
+    {
+      "a_id": 1,
+      "a_etiqueta": "Lacteos del Norte",
+      "b_id": 2,
+      "b_etiqueta": "Tienda Valle Oriente",
+      "unidades_vendidas": 21,
+      "unidades_devueltas": 11,
+      "devoluciones": 8,
+      "tasa_pct": 52.38,
+      "veces_promedio": 1.81,
+      "intervalo_95_pct": {
+        "bajo": 32.37,
+        "alto": 71.66
+      },
+      "tasa_factor_a_pct": 37.08,
+      "tasa_factor_b_pct": 37.25,
+      "distinguible": true,
+      "lectura": "sin_atribucion",
+      "lectura_texto": "La combinacion destaca, pero ningun factor por separado explica el exceso con esta muestra."
+    },
+    {
+      "a_id": 1,
+      "a_etiqueta": "Lacteos del Norte",
+      "b_id": 1,
+      "b_etiqueta": "Tienda Centro",
+      "unidades_vendidas": 31,
+      "unidades_devueltas": 14,
+      "devoluciones": 5,
+      "tasa_pct": 45.16,
+      "veces_promedio": 1.56,
+      "intervalo_95_pct": {
+        "bajo": 29.16,
+        "alto": 62.23
+      },
+      "tasa_factor_a_pct": 37.08,
+      "tasa_factor_b_pct": 33.33,
+      "distinguible": true,
+      "lectura": "sin_atribucion",
+      "lectura_texto": "La combinacion destaca, pero ningun factor por separado explica el exceso con esta muestra."
+    },
+    {
+      "a_id": 2,
+      "a_etiqueta": "CampoVerde Agricola",
+      "b_id": 3,
+      "b_etiqueta": "Tienda Cumbres",
+      "unidades_vendidas": 20,
+      "unidades_devueltas": 6,
+      "devoluciones": 6,
+      "tasa_pct": 30.0,
+      "veces_promedio": 1.04,
+      "intervalo_95_pct": {
+        "bajo": 14.55,
+        "alto": 51.9
+      },
+      "tasa_factor_a_pct": 26.19,
+      "tasa_factor_b_pct": 21.51,
+      "distinguible": false,
+      "lectura": null,
+      "lectura_texto": null
+    },
+    {
+... (recortado: 44 lineas mas)
+```
+
+Verificaciones:
+
+- ok: HTTP 200
+- ok: estado ok o sin_datos explicado
+- ok: a lo mas 5 combinaciones
+- ok: ordenadas por tasa
+- ok: el intervalo envuelve a la tasa
+- ok: aclara que no es una causa
+
+## P4-REP-55
+
+**factores 200: el lote problematico destaca**
+
+Objetivo: El lote de la demo (24 unidades, 16 devueltas) es distinguible del promedio y trae su lectura de donde viene el exceso.
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?por=lote&con=proveedor&solo_distinguibles=true" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **200 OK** (28 ms, 963 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 963
+X-Correlation-ID: b78240d0191a49a6
+```
+
+```json
+{
+  "por": "lote",
+  "con": "proveedor",
+  "estado": "ok",
+  "tasa_promedio_pct": 28.86,
+  "muestra_minima_unidades": 20,
+  "omitidas_por_muestra": 10,
+  "distinguibles": 1,
+  "celdas": [
+    {
+      "a_id": 15,
+      "a_etiqueta": "L-2026-PROB-01 (Leche entera 1 L)",
+      "b_id": 1,
+      "b_etiqueta": "Lacteos del Norte",
+      "unidades_vendidas": 24,
+      "unidades_devueltas": 16,
+      "devoluciones": 4,
+      "tasa_pct": 66.67,
+      "veces_promedio": 2.31,
+      "intervalo_95_pct": {
+        "bajo": 46.71,
+        "alto": 82.03
+      },
+      "tasa_factor_a_pct": 66.67,
+      "tasa_factor_b_pct": 37.08,
+      "distinguible": true,
+      "lectura": "factor_a",
+      "lectura_texto": "El primer factor ya tiene una tasa alta en conjunto y el segundo no: el exceso parece venir del primero."
+    }
+  ],
+  "total_celdas": 1,
+  "metodo": "tasa = unidades devueltas / vendidas por combinacion; intervalo de Wilson del 95 %; una combinacion es distinguible si el extremo bajo del intervalo supera la tasa promedio",
+  "nota": "Es una senal para revisar donde investigar, no una causa (RN-09). Solo se juzgan combinaciones con 20 unidades vendidas o mas."
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 200
+- ok: aparece el lote de la demo
+- ok: es distinguible y trae lectura
+- ok: supera el doble del promedio
+
+## P4-REP-56
+
+**factores 200 XML**
+
+Objetivo: El mismo analisis en XML (RF-31).
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?por=producto&con=tienda&limite=3" \
+  -H "Accept: application/xml" \
+  -H "Authorization: Bearer $TOKEN_SUPERVISOR"
+```
+
+Respuesta - **200 OK** (27 ms, 1318 bytes):
+
+```http
+Content-Type: application/xml; charset=utf-8
+Content-Length: 1318
+X-Correlation-ID: 47921f4c175342fa
+```
+
+```xml
+<?xml version='1.0' encoding='utf-8'?>
+<factores><por>producto</por><con>tienda</con><estado>ok</estado><tasa_promedio_pct>28.86</tasa_promedio_pct><muestra_minima_unidades>20</muestra_minima_unidades><omitidas_por_muestra>27</omitidas_por_muestra><distinguibles>1</distinguibles><celdas><item><a_id>1</a_id><a_etiqueta>Leche entera 1 L</a_etiqueta><b_id>1</b_id><b_etiqueta>Tienda Centro</b_etiqueta><unidades_vendidas>28</unidades_vendidas><unidades_devueltas>14</unidades_devueltas><devoluciones>5</devoluciones><tasa_pct>50.0</tasa_pct><veces_promedio>1.73</veces_promedio><intervalo_95_pct><bajo>32.63</bajo><alto>67.37</alto></intervalo_95_pct><tasa_factor_a_pct>42.86</tasa_factor_a_pct><tasa_factor_b_pct>33.33</tasa_factor_b_pct><distinguible>true</distinguible><lectura>factor_a</lectura><lectura_texto>El primer factor ya tiene una tasa alta en conjunto y el segundo no: el exceso parece venir del primero.</lectura_texto></item></celdas><total_celdas>1</total_celdas><metodo>tasa = unidades devueltas / vendidas por combinacion; intervalo de Wilson del 95 %; una combinacion es distinguible si el extremo bajo del intervalo supera la tasa promedio</metodo><nota>Es una senal para revisar donde investigar, no una causa (RN-09). Solo se juzgan combinaciones con 20 unidades vendidas o mas.</nota></factores>
+```
+
+Verificaciones:
+
+- ok: HTTP 200
+- ok: es XML
+- ok: raiz factores
+
+## P4-REP-57
+
+**factores 400 mismo factor dos veces**
+
+Objetivo: Un cruce necesita dos factores distintos.
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?por=tienda&con=tienda" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **400 BAD REQUEST** (9 ms, 149 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 149
+X-Correlation-ID: ec27388a9076492a
+```
+
+```json
+{
+  "error": {
+    "codigo": 400,
+    "tipo": "validacion",
+    "mensaje": "por y con deben ser factores distintos.",
+    "detalles": null,
+    "correlation_id": "ec27388a9076492a"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 400
+- ok: tipo validacion
+
+## P4-REP-58
+
+**factores 400 ruta no tiene ventas**
+
+Objetivo: Ruta y transportista no se cruzan: no existe 'vendido por ruta' para calcular la tasa.
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?por=ruta" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **400 BAD REQUEST** (8 ms, 165 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 165
+X-Correlation-ID: 77d98a28a5b14288
+```
+
+```json
+{
+  "error": {
+    "codigo": 400,
+    "tipo": "validacion",
+    "mensaje": "por debe ser uno de: proveedor, tienda, producto, lote.",
+    "detalles": null,
+    "correlation_id": "77d98a28a5b14288"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 400
+- ok: tipo validacion
+
+## P4-REP-59
+
+**factores 400 limite fuera de rango**
+
+Objetivo: El limite va de 1 a 100.
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores?limite=0" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_ANALISTA"
+```
+
+Respuesta - **400 BAD REQUEST** (8 ms, 150 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 150
+X-Correlation-ID: 7611f422da7e407c
+```
+
+```json
+{
+  "error": {
+    "codigo": 400,
+    "tipo": "validacion",
+    "mensaje": "limite debe ser un entero entre 1 y 100.",
+    "detalles": null,
+    "correlation_id": "7611f422da7e407c"
+  }
+}
+```
+
+Verificaciones:
+
+- ok: HTTP 400
+- ok: tipo validacion
+
+## P4-REP-60
+
+**factores 403 cliente**
+
+Objetivo: Como el resto de la analitica, no es para clientes (RN-13).
+
+Comando:
+
+```bash
+curl -sS -i -X GET "http://$VM_HOST:8018/api/v1/analitica/factores" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer $TOKEN_CLIENTE"
+```
+
+Respuesta - **403 FORBIDDEN** (9 ms, 271 bytes):
+
+```http
+Content-Type: application/json
+Content-Length: 271
+X-Correlation-ID: 717c6ebe9bd8468b
+```
+
+```json
+{
+  "error": {
+    "codigo": 403,
+    "tipo": "sin_permiso",
+    "mensaje": "Tu rol no tiene permiso para esta operacion.",
+    "detalles": {
+      "rol": "Cliente",
+      "roles_permitidos": [
+        "Administrador",
+        "Analista de Devoluciones",
+        "Supervisor",
+        "Encargado de Reembolsos"
+      ]
+    },
+    "correlation_id": "717c6ebe9bd8468b"
   }
 }
 ```
