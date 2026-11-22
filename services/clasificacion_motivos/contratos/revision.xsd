@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Decision humana sobre una sugerencia (POST /clasificaciones/{id}/revision):
+     confirmar, corregir (con submotivo_id y comentario) o descartar (con comentario). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="revision">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="decision">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="confirmar"/>
+              <xs:enumeration value="corregir"/>
+              <xs:enumeration value="descartar"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="submotivo_id" type="xs:string" minOccurs="0"/>
+        <xs:element name="comentario" type="xs:string" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
