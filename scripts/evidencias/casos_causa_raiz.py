@@ -58,7 +58,9 @@ def ejecutar(c):
         f"DELETE FROM mediciones_eficacia WHERE accion_id IN (SELECT id FROM acciones_capa WHERE investigacion_id IN {de_la_corrida})",
         f"DELETE FROM acciones_capa WHERE investigacion_id IN {de_la_corrida}",
         f"DELETE FROM evidencias_investigacion WHERE investigacion_id IN {de_la_corrida}",
-        f"UPDATE hipotesis SET padre_id = NULL WHERE investigacion_id IN {de_la_corrida}",
+        # Un porque no puede quedar sin padre (check) ni borrarse antes que su continuacion (RESTRICT): del nivel 5 al 2.
+        *[f"DELETE FROM hipotesis WHERE investigacion_id IN {de_la_corrida} AND tipo = 'cinco_porques' AND nivel = {n}"
+          for n in (5, 4, 3, 2)],
         f"DELETE FROM hipotesis WHERE investigacion_id IN {de_la_corrida}",
         f"DELETE FROM seguimiento_investigacion WHERE investigacion_id IN {de_la_corrida}",
         f"DELETE FROM investigaciones WHERE titulo LIKE '{MARCA}%'",
@@ -300,10 +302,10 @@ def ejecutar(c):
            objetivo="Una accion preventiva; sin meta, usa la predeterminada de 30%.", guarda={"a2": lambda r: r.json["id"]})
     c.caso("acciones 200: las ve un operador", "GET", f"{API}/acciones?investigacion_id={{inv_a}}", rol="analista",
            objetivo="Los operadores ven todas las acciones de una investigacion.",
-           verifica=[("dos acciones", lambda r: r.json["total"] == 2), ("traen responsable", lambda r: all(a["responsable"] for a in r.json["datos"]))])
+           verifica=[("dos acciones", lambda r: r.json["paginacion"]["total"] == 2), ("traen responsable", lambda r: all(a["responsable"] for a in r.json["datos"]))])
     c.caso("acciones 200: cada responsable ve solo las suyas", "GET", f"{API}/acciones", rol="inspector",
            objetivo="El Inspector, responsable de una accion, ve solo la suya (RN-13).",
-           verifica=[("solo acciones suyas", lambda r: r.json["total"] >= 1 and all(a["responsable_id"] == c.ctx["insp"] for a in r.json["datos"]))])
+           verifica=[("solo acciones suyas", lambda r: r.json["paginacion"]["total"] >= 1 and all(a["responsable_id"] == c.ctx["insp"] for a in r.json["datos"]))])
     c.caso("acciones 200: vencidas", "GET", f"{API}/acciones?vencidas=true", rol="analista",
            objetivo="Filtra las acciones con fecha compromiso pasada y sin terminar.", verifica=[("todas marcadas vencidas", lambda r: all(a["vencida"] for a in r.json["datos"]))])
     c.caso("acciones 400 estado desconocido", "GET", f"{API}/acciones?estado=dormida", rol="analista", espera=400,
