@@ -31,6 +31,7 @@ SERVICIOS_DEFECTO = (
     "web=http://app:8000,auth=http://auth:8000,ventas-catalogos=http://ventas-catalogos:8000,"
     "devoluciones=http://devoluciones:8000,evidencias=http://evidencias:8000,"
     "logistica=http://logistica:8000,inspecciones=http://inspecciones:8000,"
+    "causa-raiz=http://causa-raiz:8000,"
     "reembolsos-costos=http://reembolsos-costos:8000,analisis-auditoria=http://analisis-auditoria:8000,"
     "sincronizacion=http://sincronizacion:8000"
 )

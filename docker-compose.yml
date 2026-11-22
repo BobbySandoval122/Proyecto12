@@ -234,6 +234,25 @@ services:
       timeout: 5s
       retries: 3
 
+  causa-raiz:
+    # Tercer parcial, dominios 11 y 12: investigaciones de causa raiz, acciones
+    # correctivas (CAPA) y medicion de su eficacia (RF-24).
+    build:
+      context: .
+      dockerfile: services/causa_raiz/Dockerfile
+    container_name: devoluciones_causa_raiz
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8011:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   sincronizacion:
     # Tercer parcial, dominio 20: operaciones capturadas sin conexion desde las
     # apps. Comparte el volumen privado de evidencias para guardar las fotos.

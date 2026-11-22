@@ -730,3 +730,39 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 **Documento.** `docs/MONOLITICO_VS_DISTRIBUIDO.md`: donde vive cada regla en los
 dos modos y por que la caida de una API no duplica operaciones.
 
+
+## 2026-11-21 — Causa raiz y acciones correctivas (Persona 4, dominios 11 y 12)
+
+**Decision.** Un solo servicio (8011) para la investigacion y las acciones CAPA:
+una accion nace de una investigacion y su eficacia la cierra o la reabre,
+comparten ciclo de vida y responsables. Las investigaciones, hipotesis,
+evidencias y acciones viven en PostgreSQL, no en MongoDB: todas se relacionan
+con devoluciones y usuarios por llave foranea y el flujo necesita transacciones
+(cerrar sin acciones pendientes, no dos investigaciones abiertas del mismo
+objeto). Las evidencias son inmutables y las restricciones de la base impiden
+una conclusion sin responsable ni una hipotesis con campos de otro tipo.
+
+**El analisis no decide (RN-09).** La deteccion solo crea alertas que PROPONEN
+investigar y exige 2 veces el promedio, 20 unidades y 3 casos, para no alarmar
+por ruido. Confirmar una causa exige evidencia y una hipotesis verificada. Una
+investigacion inconclusa se puede cerrar o reabrir.
+
+**Medir si funciono, sin enganarse.** Se compara la tasa de lo vendido antes de
+implementar contra lo vendido despues, por cohorte de venta (una devolucion que
+llega tarde se cuenta con su venta). El primer diseno comparaba hasta hoy y
+tenia un sesgo claro: lo vendido en los ultimos dias todavia puede devolverse,
+asi que cualquier accion parecia efectiva. Ahora "despues" se corta en hoy
+menos el plazo maximo de devolucion (RN-16, tomado de `politicas_devolucion`).
+El periodo "antes" no se recorta: si algo aun no madura, su tasa sale mas baja y
+la meta se vuelve mas dificil; el error es conservador. Con menos de 20 unidades
+en cualquier periodo el veredicto es `sin_datos`, nunca `efectiva`.
+
+**Cierre.** Lo hace un Supervisor distinto del analista y con la reconfirmacion
+de contrasena que David definio para `cerrar_investigacion` en `shared/seguridad.py`.
+Las reglas de negocio se validan ANTES de consumir el permiso (de un solo uso),
+asi un rechazo por reglas no obliga a reconfirmar. El veredicto final no esconde
+fallos: una accion no efectiva, o sin medir, pesa mas que las efectivas.
+
+**Pendiente.** No notifica (le tocara al servicio 8017) y la deteccion no tiene
+reloj propio; se dispara con `POST /alertas/detectar`. Las investigaciones por
+ruta no se soportan porque una ruta no tiene unidades vendidas.

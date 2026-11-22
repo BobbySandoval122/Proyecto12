@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Accion correctiva o preventiva (POST /investigaciones/{id}/acciones). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="accion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="tipo"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="correctiva"/><xs:enumeration value="preventiva"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="descripcion" type="xs:string"/>
+        <xs:element name="responsable_id" type="xs:positiveInteger"/>
+        <xs:element name="fecha_compromiso" type="xs:string"/>
+        <xs:element name="meta_reduccion_pct" type="xs:string" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

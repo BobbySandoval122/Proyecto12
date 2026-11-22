@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cambio de estado de una accion (POST /acciones/{id}/estado). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="estado_accion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="estado"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="en_curso"/><xs:enumeration value="implementada"/><xs:enumeration value="cancelada"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="comentario" type="xs:string" minOccurs="0"/>
+        <xs:element name="fecha_implementacion" type="xs:string" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
