@@ -1,9 +1,9 @@
 """Casos de evidencia de auditoria (8008): RF-30, RN-12, RN-13, RNF-16, RNF-23, RF-25.
 
 El servicio de auditoria es de solo lectura: no hay datos que limpiar. Tambien se documentan las rutas
-obsoletas de /api/v1/analisis, que siguen respondiendo con las cabeceras Deprecation y Link hacia su sucesor
-(clasificacion-motivos 8010 y reportes-analitica 8018) hasta que se corte el analisis (docs/MIGRACION_ANALISIS_8008.md).
-Solo se ejercen las obsoletas que no escriben (POST /sincronizar y GET /pareto guardan resultados en MongoDB).
+de /api/v1/analisis tras el corte (ANALISIS_HABILITADO=false, docs/MIGRACION_ANALISIS_8008.md): responden 410
+servicio_movido, aun sin token, y nombran a su sucesor (clasificacion-motivos 8010, reportes-analitica 8018 y la
+propia auditoria). Con el analisis habilitado estas mismas rutas responden 200 con las cabeceras Deprecation y Link.
 """
 SERVICIO = "analisis-auditoria"
 SIGLA = "AUD"
@@ -24,9 +24,9 @@ def ejecutar(c):
     c.ctx["uid"] = int(c.valor("SELECT usuario_id FROM bitacora WHERE usuario_id IS NOT NULL ORDER BY id DESC LIMIT 1"))
 
     # ---------------------------------------------------------------- salud, contratos y Swagger
-    c.caso("salud 200 con las tres dependencias", "GET", "/health", objetivo="El servicio informa PostgreSQL, Redis y MongoDB, y que el analisis esta obsoleto (RF-32).",
+    c.caso("salud 200 con las tres dependencias", "GET", "/health", objetivo="El servicio informa PostgreSQL, Redis y MongoDB, y que el analisis esta retirado (RF-32).",
            verifica=[("estado ok", lambda r: r.json["estado"] == "ok"), ("MongoDB ok", lambda r: r.json["dependencias"]["mongodb"]["ok"] is True),
-                     ("analisis obsoleto", lambda r: r.json["analisis"] == "obsoleto")])
+                     ("analisis retirado", lambda r: r.json["analisis"] == "retirado")])
     c.caso("Swagger: documentacion de la API", "GET", "/docs", accept="text/html", objetivo="La API publica su documentacion Swagger.",
            verifica=[("HTML de Swagger UI", lambda r: "swagger" in r.texto.lower())])
     c.caso("Swagger: especificacion OpenAPI", "GET", "/openapi.json", objetivo="La especificacion incluye la auditoria.",
@@ -92,25 +92,24 @@ def ejecutar(c):
     c.caso("eventos 400 filtro demasiado largo", "GET", f"{API}/eventos?servicio={'s' * 61}", rol="admin", espera=400, objetivo="Un filtro de texto tiene un maximo.",
            verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
 
-    # ---------------------------------------------------------------- rutas de analisis obsoletas
-    def obsoleta(r):
-        return r.cabeceras.get("deprecation") == "true"
+    # ---------------------------------------------------------------- rutas de analisis retiradas (corte)
+    def retirada(sucesor):
+        return [("410 servicio_movido", lambda r: tipo_error(r) == "servicio_movido"),
+                ("nombra al sucesor", lambda r: sucesor in " ".join(r.json["error"]["detalles"].values())),
+                ("lleva Deprecation: true", lambda r: r.cabeceras.get("deprecation") == "true")]
 
-    c.caso("obsoleta: alertas de fraude", "GET", f"{OBS}/alertas-fraude", rol="analista",
-           objetivo="Sigue respondiendo como antes, pero avisa que esta obsoleta y donde vive su sucesor (reportes-analitica, 8018).",
-           verifica=[("Deprecation: true", obsoleta), ("Link al sucesor", lambda r: 'rel="successor-version"' in r.cabeceras.get("link", "") and "reportes-analitica" in r.cabeceras["link"])])
-    c.caso("obsoleta: clasificar motivo", "POST", f"{OBS}/clasificar-motivo", rol="cliente",
-           json_cuerpo={"descripcion": "El producto llego con el empaque roto y derramado"},
-           objetivo="La clasificacion de motivos pasa a clasificacion-motivos (8010); esta ruta avisa su sucesor. Orienta, el usuario confirma.",
-           verifica=[("Deprecation: true", obsoleta), ("Link a clasificacion-motivos", lambda r: "clasificacion-motivos" in r.cabeceras.get("link", "")),
-                     ("pide confirmacion", lambda r: r.json["requiere_confirmacion"] is True)])
-    c.caso("obsoleta: clasificar motivo 400", "POST", f"{OBS}/clasificar-motivo", rol="cliente", espera=400, json_cuerpo={"descripcion": "corto"},
-           objetivo="La descripcion tiene entre 10 y 2000 caracteres.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion"), ("tambien avisa Deprecation", obsoleta)])
-    c.caso("obsoleta: alias de eventos", "GET", f"{OBS}/eventos?por_pagina=2", rol="admin",
-           objetivo="La traza por correlation id es auditoria: el alias avisa que el sucesor es /api/v1/auditoria/eventos.",
-           verifica=[("Deprecation: true", obsoleta), ("Link a la auditoria", lambda r: "/api/v1/auditoria/eventos" in r.cabeceras.get("link", ""))])
-    c.caso("obsoleta: resumen sin sucesor", "GET", f"{OBS}/resumen", rol="analista",
-           objetivo="Solo contaba snapshots y no tiene sucesor: lleva Deprecation pero no Link.",
-           verifica=[("Deprecation: true", obsoleta), ("sin Link", lambda r: "link" not in r.cabeceras)])
-    c.caso("obsoleta: cliente no ve alertas de fraude", "GET", f"{OBS}/alertas-fraude", rol="cliente", espera=403,
-           objetivo="Las alertas nombran clientes: solo Administrador y Analista (RN-15).", verifica=[("tipo sin_permiso", lambda r: tipo_error(r) == "sin_permiso")])
+    c.caso("retirada: clasificar motivo", "POST", f"{OBS}/clasificar-motivo", espera=410, json_cuerpo={"descripcion": "El producto llego con el empaque roto"},
+           objetivo="La clasificacion de motivos vive ahora en clasificacion-motivos (8010). Esta ruta responde 410 aun sin token y dice donde.",
+           verifica=retirada("clasificacion-motivos"))
+    c.caso("retirada: alertas de fraude", "GET", f"{OBS}/alertas-fraude", rol="analista", espera=410,
+           objetivo="Las alertas de fraude viven en reportes-analitica (8018). Ni un Analista con token las obtiene aqui.", verifica=retirada("reportes-analitica"))
+    c.caso("retirada: Pareto", "GET", f"{OBS}/pareto?dimension=motivo", rol="analista", espera=410,
+           objetivo="El Pareto vive en reportes-analitica (8018), calculado directo en PostgreSQL.", verifica=retirada("/api/v1/reportes/pareto"))
+    c.caso("retirada: sincronizar", "POST", f"{OBS}/sincronizar", rol="analista", espera=410, json_cuerpo={},
+           objetivo="Sincronizar ya no hace falta: 8018 calcula directo en PostgreSQL y siempre esta al dia. No escribe nada.", verifica=[("410 servicio_movido", lambda r: tipo_error(r) == "servicio_movido")])
+    c.caso("retirada: resumen", "GET", f"{OBS}/resumen", rol="analista", espera=410,
+           objetivo="El resumen solo contaba snapshots y no tiene sucesor.", verifica=[("410 servicio_movido", lambda r: tipo_error(r) == "servicio_movido")])
+    c.caso("retirada: alias de eventos", "GET", f"{OBS}/eventos?por_pagina=2", rol="admin", espera=410,
+           objetivo="La traza por correlation id es auditoria: el sucesor es /api/v1/auditoria/eventos, que sigue en 200 (ver arriba).", verifica=retirada("/api/v1/auditoria/eventos"))
+    c.caso("la auditoria sigue en pie tras el corte", "GET", f"{API}/estado", rol="analista",
+           objetivo="Retirar el analisis no toca la auditoria: la separacion que pidio el profe.", verifica=[("proteccion completa", lambda r: r.json["proteccion"]["completa"] is True)])

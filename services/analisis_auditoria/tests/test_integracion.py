@@ -140,6 +140,12 @@ SKIP = unittest.skipUnless(os.environ.get("INTEGRACION") == "1",
                          "Solo en la VM: INTEGRACION=1 y el entorno levantado")
 
 
+def _analisis_retirado():
+    """El /health dice si el analisis obsoleto esta retirado (ANALISIS_HABILITADO=false)."""
+    codigo, cuerpo = _http(SERVICIO_URL, "GET", "/health")
+    return codigo == 200 and cuerpo.get("analisis") == "retirado"
+
+
 @SKIP
 class IntegracionAnalisis(unittest.TestCase):
     @classmethod
@@ -152,7 +158,12 @@ class IntegracionAnalisis(unittest.TestCase):
         _logout(cls.analista)
         _logout(cls.cliente)
 
+    def _exigir_analisis_habilitado(self):
+        if _analisis_retirado():
+            self.skipTest("El analisis esta retirado (ANALISIS_HABILITADO=false); ver IntegracionCorte")
+
     def test_sincronizar_proyecta_postgres_en_mongo_sin_modificar_postgres(self):
+        self._exigir_analisis_habilitado()
         antes = _sql("SELECT COUNT(*) AS n, COALESCE(MAX(id), 0) AS m FROM devoluciones "
                      "WHERE eliminado_en IS NULL", uno=True)
         codigo, resp = _http(SERVICIO_URL, "POST", PREFIJO + "/analisis/sincronizar",
@@ -167,6 +178,7 @@ class IntegracionAnalisis(unittest.TestCase):
         self.assertEqual(antes, despues)  # solo lectura sobre PostgreSQL
 
     def test_pareto_primero_calcula_y_luego_sale_del_cache_con_ttl(self):
+        self._exigir_analisis_habilitado()
         codigo, _ = _http(SERVICIO_URL, "POST", PREFIJO + "/analisis/sincronizar", token=self.analista)
         self.assertEqual(codigo, 200)  # sube la version del cache: la primera lectura es miss
         ruta = PREFIJO + "/analisis/pareto?dimension=motivo&medida=frecuencia"
@@ -187,6 +199,7 @@ class IntegracionAnalisis(unittest.TestCase):
             self.assertAlmostEqual(acumulados[-1], 100.0, places=1)
 
     def test_clasificar_motivo_solo_sugiere(self):  # RN-11
+        self._exigir_analisis_habilitado()
         antes = _sql("SELECT COUNT(*) AS n FROM devoluciones", uno=True)["n"]
         codigo, resp = _http(SERVICIO_URL, "POST", PREFIJO + "/analisis/clasificar-motivo",
                              {"descripcion": "El producto llego caducado y con mal olor"}, self.cliente)
@@ -203,7 +216,8 @@ class IntegracionAnalisis(unittest.TestCase):
         codigo, _ = _http(SERVICIO_URL, "GET", PREFIJO + "/auditoria", token=self.cliente)
         self.assertEqual(codigo, 403)
         codigo, _ = _http(SERVICIO_URL, "GET", PREFIJO + "/analisis/eventos", token=self.cliente)
-        self.assertEqual(codigo, 403)
+        # Con el analisis retirado la ruta ni siquiera pide token: responde 410.
+        self.assertEqual(codigo, 410 if _analisis_retirado() else 403)
 
 
 @SKIP
@@ -304,6 +318,51 @@ class IntegracionAuditoria(unittest.TestCase):
         self.assertEqual(alias["paginacion"]["total"], nuevo["paginacion"]["total"])
         self.assertEqual(cabeceras["Deprecation"], "true")
         self.assertIn("/api/v1/auditoria/eventos", cabeceras["Link"])
+
+
+@SKIP
+class IntegracionCorte(unittest.TestCase):
+    """El corte: con ANALISIS_HABILITADO=false las rutas de analisis responden 410 y la auditoria sigue.
+
+    Se salta si el analisis aun esta habilitado. Trazabilidad: RN-12, RNF-23 y la correccion del profe
+    de separar la auditoria del analisis (docs/MIGRACION_ANALISIS_8008.md, etapa 3).
+    """
+    RUTAS = (("POST", "/analisis/clasificar-motivo", "clasificacion-motivos"),
+             ("GET", "/analisis/alertas-fraude", "reportes-analitica"),
+             ("GET", "/analisis/pareto?dimension=motivo", "reportes-analitica"),
+             ("POST", "/analisis/sincronizar", None),
+             ("GET", "/analisis/resumen", None),
+             ("GET", "/analisis/eventos", "/api/v1/auditoria/eventos"))
+
+    @classmethod
+    def setUpClass(cls):
+        if not _analisis_retirado():
+            raise unittest.SkipTest("El analisis sigue habilitado: no hay corte que comprobar")
+        cls.analista = _login("Analista de Devoluciones")
+
+    @classmethod
+    def tearDownClass(cls):
+        _logout(cls.analista)
+
+    def test_health_dice_que_el_analisis_esta_retirado(self):
+        codigo, cuerpo = _http(SERVICIO_URL, "GET", "/health")
+        self.assertEqual((codigo, cuerpo["analisis"]), (200, "retirado"))
+
+    def test_cada_ruta_del_analisis_responde_410_con_su_sucesor_aun_sin_token(self):
+        for metodo, ruta, sucesor in self.RUTAS:
+            codigo, cuerpo = _http(SERVICIO_URL, metodo, PREFIJO + ruta, {} if metodo == "POST" else None)
+            self.assertEqual(codigo, 410, ruta)
+            self.assertEqual(cuerpo["error"]["tipo"], "servicio_movido", ruta)
+            sucesores = " ".join(cuerpo["error"]["detalles"].values())
+            if sucesor:
+                self.assertIn(sucesor, sucesores, ruta)
+
+    def test_la_auditoria_sigue_funcionando(self):
+        for ruta in ("/auditoria?por_pagina=3", "/auditoria/eventos?por_pagina=3", "/auditoria/estado"):
+            codigo, _ = _http(SERVICIO_URL, "GET", PREFIJO + ruta, token=self.analista)
+            self.assertEqual(codigo, 200, ruta)
+        codigo, _ = _http(SERVICIO_URL, "GET", PREFIJO + "/auditoria")
+        self.assertEqual(codigo, 401)            # sin token sigue pidiendo credenciales
 
 
 if __name__ == "__main__":
