@@ -290,3 +290,10 @@ def test_valor_completa_las_variables_del_contexto_como_caso(puerto):
     c.ctx["dev_id"] = 41
     assert c.valor("SELECT estado FROM devoluciones WHERE id = {dev_id}") == "7"
     assert recibidas == ["SELECT estado FROM devoluciones WHERE id = 41"]
+
+
+def test_la_cabecera_cita_el_comando_que_se_escribe_no_el_nombre_del_servicio(corrida):
+    corrida.nombre_cli = "proveedores"
+    corrida.caso("ok", "GET", "/ok", objetivo="o")
+    md = corrida.markdown()
+    assert "scripts/evidencias/ejecutar.py proveedores`" in md and "ejecutar.py servicio-x" not in md
