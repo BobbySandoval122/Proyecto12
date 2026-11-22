@@ -28,7 +28,7 @@ nuevos.
 | 8013 | proveedores | 13 proveedores | **implementado** |
 | 8014 | disposicion-inventario | 14 disposicion + 15 inventario inverso | nuevo |
 | 8017 | notificaciones | 17 notificaciones | nuevo |
-| 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | nuevo |
+| 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | **implementado** (8008 aun conserva lo suyo; se retira al separar la auditoria) |
 | 8020 | sincronizacion | 20 sincronizacion offline | **implementado** |
 | 8021 | integraciones-monitoreo | 21 integraciones + 22 monitoreo | **implementado** |
 

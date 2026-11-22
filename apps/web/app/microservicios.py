@@ -17,6 +17,7 @@ SERVICIOS = (
     ("inspecciones", "INSPECCIONES_SERVICE_URL", "http://inspecciones:8000"),
     ("causa-raiz", "CAUSA_RAIZ_SERVICE_URL", "http://causa-raiz:8000"),
     ("reembolsos-costos", "REEMBOLSOS_SERVICE_URL", "http://reembolsos-costos:8000"),
+    ("reportes-analitica", "REPORTES_SERVICE_URL", "http://reportes-analitica:8000"),
     ("ventas-catalogos", "VENTAS_SERVICE_URL", "http://ventas-catalogos:8000"),
     ("proveedores", "PROVEEDORES_SERVICE_URL", "http://proveedores:8000"),
     ("evidencias", "EVIDENCIAS_SERVICE_URL", "http://evidencias:8000"),

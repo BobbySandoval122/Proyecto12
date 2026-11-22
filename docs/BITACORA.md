@@ -842,3 +842,39 @@ fallos: una accion no efectiva, o sin medir, pesa mas que las efectivas.
 **Pendiente.** No notifica (le tocara al servicio 8017) y la deteccion no tiene
 reloj propio; se dispara con `POST /alertas/detectar`. Las investigaciones por
 ruta no se soportan porque una ruta no tiene unidades vendidas.
+
+## 2026-11-21 — Reportes y analitica (Persona 4, dominios 18 y 19)
+
+**Decision: PDF y Excel sin librerias.** El documento pide reportes PDF y Excel,
+pero el repo no tiene ninguna libreria para eso y `CLAUDE.md` exige acordar las
+nuevas con el equipo. Se escribieron con la biblioteca estandar: el XLSX es un
+zip de XML con dos hojas y el PDF una tabla en Courier (ancho fijo, asi las
+columnas se alinean sin medir glifos). Se verificaron con `pdftotext`, con
+renderizado y con Quick Look de macOS, no con Excel; las pruebas comprueban la
+estructura (desplazamientos del xref, longitud de cada flujo, XML bien formado,
+ninguna formula). Si el equipo prefiere `reportlab` y `openpyxl`, solo cambia
+`formatos.py`. El costo de esta decision es un PDF sin graficas; para graficas
+estan las opciones de Highcharts.
+
+**Una serie de tasas puede mentir si no se cuida la madurez.** Una tasa por mes
+de venta casi siempre parece bajar en los ultimos meses porque sus devoluciones
+aun no llegan (plazo de 30 dias, RN-16). Sin correccion, cualquier tendencia y
+cualquier pronostico habrian salido optimistas. Las series de tasa solo usan
+meses cuyo fin quedo al menos un plazo atras, y las de devoluciones y costo
+excluyen el mes en curso. Un mes con menos de 20 unidades no entra a la
+regresion. La misma idea se uso en la medicion de eficacia de `causa-raiz`.
+
+**Estadistica explicable.** Regresion lineal con prueba t (la direccion solo se
+afirma si el cambio es distinguible del ruido), intervalo de prediccion del
+95 % que se ensancha al alejarse, y puntaje z robusto (mediana y MAD) para las
+anomalias: el z clasico se deja enganar por el propio valor extremo. Nada de
+esto decide una causa (RN-09).
+
+**Pareto y alertas.** Ahora tambien viven aqui, calculados en PostgreSQL y sin
+el paso de sincronizar que usa `analisis-auditoria`. Ese servicio no se toca:
+se retira al separar la auditoria.
+
+**Seguridad.** Las alertas de fraude nombran clientes y se limitan a
+Administrador y Analista (RN-15). Las descargas se limitan a 20 por minuto, no
+se cachean y quedan en bitacora sin los datos (RNF-16). El CSV neutraliza las
+formulas.
