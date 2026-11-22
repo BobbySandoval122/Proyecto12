@@ -130,3 +130,16 @@ esta ficha no sustituyen esas ejecuciones.
 | Reglas | El lote y las devoluciones deben ser del proveedor; una devolucion no esta en dos reclamaciones abiertas; transiciones de estado controladas; aceptar, aceptar parcialmente o rechazar solo tras la respuesta del proveedor; no se recupera mas de lo reclamado; cerrar exige resolucion y comentario. El semaforo no califica con menos de 20 unidades vendidas. |
 | Roles | Lectura: Administrador, Analista, Supervisor y Encargado de Reembolsos. Crear y dar seguimiento: Administrador, Analista y Supervisor. Cliente e Inspector reciben 403. |
 | Despliegue/pruebas | `services/proveedores/Dockerfile`, Compose `proveedores`; 74 pruebas que corren sin base y `test_integracion.py` en la VM. |
+
+## 12. causa-raiz — puerto 8011
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Llevar una investigacion de causa raiz de principio a fin: alerta, evidencia, hipotesis, verificacion, conclusion, acciones correctivas (CAPA), medicion de su eficacia y cierre. |
+| Justificacion | RF-23, RF-24, RN-09, RN-11, RN-12. Es el flujo de 9 pasos que pidio el profe; hasta ahora el panel de causas mostraba patrones pero nada obligaba a investigarlos ni dejaba rastro de quien concluyo que. Una accion CAPA nace de una investigacion y su eficacia la reabre o la cierra, por eso van juntas (docs/PUERTOS.md). Guia: `docs/GUIA_CAUSA_RAIZ.md`. |
+| Persistencia | PostgreSQL: `alertas_patron`, `investigaciones`, `hipotesis`, `evidencias_investigacion`, `seguimiento_investigacion` (migracion 043), `acciones_capa`, `mediciones_eficacia` (044); lee ventas, lotes y devoluciones. Sesion y permiso de operacion critica en Redis. |
+| Endpoints | `POST /alertas/detectar`, `GET /alertas`, `POST /alertas/{id}/descartar` e `/investigar`; `GET/POST /investigaciones`, `GET /investigaciones/{id}`, `/hipotesis`, `/evidencias`, `/verificacion`, `/hipotesis/{id}/verificacion`, `/conclusion`, `/reabrir`, `/acciones`, `/cierre`; `GET /acciones`, `GET /acciones/{id}`, `POST /acciones/{id}/estado` y `/mediciones`; todos bajo `/api/v1/causa-raiz`. |
+| Reglas | Estados sin saltos; un objeto no tiene dos investigaciones abiertas; evidencia inmutable y del objeto investigado; cinco porques en cadena de hasta 5 niveles sin ramificar; confirmar una causa exige evidencia y una hipotesis verificada; las acciones exigen causa confirmada, responsable interno activo y fecha no pasada; la eficacia se mide por cohorte de venta sin contar lo que aun puede devolverse y nunca da `efectiva` con menos de 20 unidades; cierre por un supervisor distinto del analista. |
+| Roles | Operar: Administrador, Analista y Supervisor. Cerrar: solo Supervisor, con la reconfirmacion de contrasena de `auth` (`cerrar_investigacion`, un solo uso). Cada responsable ve y mueve solo sus acciones; las ajenas responden 404. |
+| Despliegue/pruebas | `services/causa_raiz/Dockerfile`, Compose `causa-raiz`; 132 pruebas que corren sin base (reglas, XSD y que toda ruta exija JWT) y `test_integracion.py`, que recorre los 9 pasos en la VM. |
+

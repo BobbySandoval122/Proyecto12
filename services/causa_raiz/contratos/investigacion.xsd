@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Abrir una investigacion manual sobre un lote, proveedor, tienda o producto (POST /investigaciones). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="investigacion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="dimension"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="lote"/><xs:enumeration value="proveedor"/><xs:enumeration value="tienda"/><xs:enumeration value="producto"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="referencia_id" type="xs:positiveInteger"/>
+        <xs:element name="titulo" type="xs:string"/>
+        <xs:element name="descripcion" type="xs:string"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

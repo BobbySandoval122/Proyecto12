@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Conclusion de la investigacion (POST /investigaciones/{id}/conclusion). Confirmar exige causa_raiz. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="conclusion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="conclusion"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="causa_confirmada"/><xs:enumeration value="inconclusa"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="causa_raiz" type="xs:string" minOccurs="0"/>
+        <xs:element name="justificacion" type="xs:string"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

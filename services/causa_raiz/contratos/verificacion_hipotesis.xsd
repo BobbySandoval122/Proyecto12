@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Resultado de verificar una hipotesis (POST /investigaciones/{id}/hipotesis/{id}/verificacion). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="verificacion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="resultado"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="verificada"/><xs:enumeration value="descartada"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="resultado_verificacion" type="xs:string"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hipotesis de causa (POST /investigaciones/{id}/hipotesis). El nivel de un porque lo calcula el servicio. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="hipotesis">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="tipo"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="cinco_porques"/><xs:enumeration value="ishikawa"/><xs:enumeration value="libre"/></xs:restriction></xs:simpleType></xs:element>
+        <xs:element name="descripcion" type="xs:string"/>
+        <xs:element name="padre_id" type="xs:string" minOccurs="0"/>
+        <xs:element name="categoria_ishikawa" minOccurs="0"><xs:simpleType><xs:restriction base="xs:string"><xs:enumeration value="material"/><xs:enumeration value="metodo"/><xs:enumeration value="maquina"/><xs:enumeration value="mano_de_obra"/><xs:enumeration value="medicion"/><xs:enumeration value="medio_ambiente"/></xs:restriction></xs:simpleType></xs:element>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
