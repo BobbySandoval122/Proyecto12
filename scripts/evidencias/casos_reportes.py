@@ -201,3 +201,27 @@ def ejecutar(c):
     c.caso("alertas de fraude 403 supervisor", "GET", f"{ANA}/alertas-fraude", rol="supervisor", espera=403,
            objetivo="Nombran clientes: las ven Administrador y Analista, no el Supervisor (RN-15).",
            verifica=[("tipo sin_permiso", lambda r: tipo_error(r) == "sin_permiso")])
+
+    # ---------------------------------------------------------------- analisis de varios factores
+    c.caso("factores 200: proveedor por tienda", "GET", f"{ANA}/factores?por=proveedor&con=tienda&limite=5", rol="analista",
+           objetivo="Cruza dos factores: la tasa de cada combinacion con su intervalo de Wilson del 95 % y la tasa de cada factor por separado (RF-23, RF-24).",
+           verifica=[("estado ok o sin_datos explicado", lambda r: r.json["estado"] in ESTADOS_ANALISIS and (r.json["estado"] == "ok" or bool(r.json["motivo"]))),
+                     ("a lo mas 5 combinaciones", lambda r: len(r.json["celdas"]) <= 5),
+                     ("ordenadas por tasa", lambda r: [x["tasa_pct"] for x in r.json["celdas"]] == sorted((x["tasa_pct"] for x in r.json["celdas"]), reverse=True)),
+                     ("el intervalo envuelve a la tasa", lambda r: all(x["intervalo_95_pct"]["bajo"] <= x["tasa_pct"] <= x["intervalo_95_pct"]["alto"] for x in r.json["celdas"])),
+                     ("aclara que no es una causa", lambda r: "RN-09" in r.json["nota"])])
+    c.caso("factores 200: el lote problematico destaca", "GET", f"{ANA}/factores?por=lote&con=proveedor&solo_distinguibles=true", rol="analista",
+           objetivo="El lote de la demo (24 unidades, 16 devueltas) es distinguible del promedio y trae su lectura de donde viene el exceso.",
+           verifica=[("aparece el lote de la demo", lambda r: any(LOTE in x["a_etiqueta"] for x in r.json["celdas"])),
+                     ("es distinguible y trae lectura", lambda r: all(x["distinguible"] and x["lectura"] for x in r.json["celdas"])),
+                     ("supera el doble del promedio", lambda r: all(x["veces_promedio"] >= 2 for x in r.json["celdas"] if LOTE in x["a_etiqueta"]))])
+    c.caso("factores 200 XML", "GET", f"{ANA}/factores?por=producto&con=tienda&limite=3", rol="supervisor", accept="application/xml",
+           objetivo="El mismo analisis en XML (RF-31).", verifica=[("es XML", lambda r: r.tipo.startswith("application/xml")), ("raiz factores", lambda r: "<factores>" in r.texto)])
+    c.caso("factores 400 mismo factor dos veces", "GET", f"{ANA}/factores?por=tienda&con=tienda", rol="analista", espera=400,
+           objetivo="Un cruce necesita dos factores distintos.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
+    c.caso("factores 400 ruta no tiene ventas", "GET", f"{ANA}/factores?por=ruta", rol="analista", espera=400,
+           objetivo="Ruta y transportista no se cruzan: no existe 'vendido por ruta' para calcular la tasa.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
+    c.caso("factores 400 limite fuera de rango", "GET", f"{ANA}/factores?limite=0", rol="analista", espera=400,
+           objetivo="El limite va de 1 a 100.", verifica=[("tipo validacion", lambda r: tipo_error(r) == "validacion")])
+    c.caso("factores 403 cliente", "GET", f"{ANA}/factores", rol="cliente", espera=403,
+           objetivo="Como el resto de la analitica, no es para clientes (RN-13).", verifica=[("tipo sin_permiso", lambda r: tipo_error(r) == "sin_permiso")])
