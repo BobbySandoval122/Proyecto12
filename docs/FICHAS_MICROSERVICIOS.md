@@ -71,7 +71,7 @@ en `/contratos/<archivo>.xsd`, Dockerfile propio y `/health`.
 | Proposito | Consultar ventas/lineas y administrar siete catalogos reales. |
 | Justificacion | RF-05 y RF-06; fuente para validar producto, lote, proveedor y motivo. |
 | Persistencia | PostgreSQL; tablas y columnas dinamicas limitadas por listas blancas; sesion Redis. |
-| Endpoints | `GET /ventas`, `GET /ventas/{id}`, CRUD y estado bajo `/catalogos/{nombre}`. |
+| Endpoints | `GET /ventas`, `GET /ventas/{id}`, CRUD y estado bajo `/catalogos/{nombre}`; trazabilidad (dominio 9) bajo `/trazabilidad`: `GET /lotes`, `GET /lotes/{id}`, `POST /lotes/{id}/series`, `GET /series/{serie}`, `PATCH /series/{serie}/venta`, `GET /tasas`. |
 | Reglas | Clientes solo ven sus ventas y motivos activos; referencias activas; paginacion y busqueda limitada. |
 | Roles | Lectura autenticada con restricciones; escritura solo Administrador. |
 | Despliegue/pruebas | Dockerfile y Compose propios; 8 pruebas puras de validacion. |

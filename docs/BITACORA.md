@@ -756,3 +756,26 @@ respuesta omite las palabras clave y esta limitada a 30 por minuto.
 
 **Pendiente.** `analisis-auditoria` conserva su `clasificar-motivo`; se retira
 al separar la auditoria (bloque final del plan de Persona 4).
+
+## 2026-11-21 — Lotes, series y tasas (Persona 4, dominio 9)
+
+**Decision.** La trazabilidad vive en `ventas-catalogos` (8006) y no en un
+servicio nuevo: lote, serie y venta ya estan en las mismas tablas, y la
+trazabilidad es una consulta sobre ellas (ver `docs/PUERTOS.md`). Se agrega la
+tabla `series_producto` (migracion 040, rango de Persona 4) con `numero_serie`
+UNIQUE global y `venta_detalle_id` nulo mientras la unidad sigue en almacen.
+
+**Tasas.** Para proveedor, tienda, producto y lote la tasa es unidades
+devueltas entre unidades vendidas, con el mismo conteo que `panel.causas`, de
+modo que el panel y el servicio no pueden discrepar. Una ruta no tiene
+"unidades vendidas", asi que ahi se mide el dano: inspecciones no aptas entre
+inspecciones realizadas. Un lote sin ventas devuelve `null`, no 0.
+
+**Seguridad.** Los clientes no consultan trazabilidad (expone proveedores y
+costos internos); la respuesta no incluye datos del cliente (RN-15). Todo es
+informacion para revision humana, no una causa (RN-09).
+
+**Datos de demo.** `crear_lote_problematico` en `scripts/seed_demo.py` crea el
+lote refrigerado `L-2026-PROB-01`: 12 ventas de 8 unidades, 9 devoluciones de 2
+unidades (18.75 %), 6 de ellas en Tienda Centro por una misma ruta. Sin `random`
+e idempotente. Lo necesitan las inspecciones (Persona 3) y la demo de causa raiz.

@@ -321,6 +321,97 @@ paths:
       - *id010
       security:
       - bearerAuth: []
+  /api/v1/trazabilidad/lotes:
+    get:
+      summary: Lotes con unidades vendidas, devueltas y tasa (lotes con problemas recurrentes)
+      description: Roles internos (no Cliente ni Recolector). Parametros q, proveedor_id, producto_id, solo_con_devoluciones, limite, desplazamiento.
+      responses:
+        '200': {description: Pagina de lotes}
+        '401': {description: Sin token}
+        '403': {description: Rol sin permiso}
+      security:
+      - bearerAuth: []
+  /api/v1/trazabilidad/lotes/{lote_id}:
+    get:
+      summary: Trazabilidad de un lote
+      description: Producto, proveedor, resumen con tasa, tiendas, series y cada devolucion con su recorrido (ruta, transportista, recepcion, inspeccion, disposicion). Es informacion para revision humana, no confirma causalidad (RN-09).
+      parameters:
+      - {name: lote_id, in: path, required: true, schema: {type: integer}}
+      responses:
+        '200': {description: Trazabilidad del lote}
+        '401': {description: Sin token}
+        '403': {description: Rol sin permiso}
+        '404': {description: Lote inexistente}
+      security:
+      - bearerAuth: []
+  /api/v1/trazabilidad/lotes/{lote_id}/series:
+    post:
+      summary: Alta de numeros de serie de un lote (solo Administrador, idempotente)
+      parameters:
+      - {name: lote_id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                series: {type: array, maxItems: 500, items: {type: string, pattern: '^[A-Za-z0-9._-]{1,60}$'}}
+          application/xml:
+            schema: {type: object, xml: {name: lote_series}}
+      responses:
+        '201': {description: Series registradas}
+        '400': {description: Series invalidas o repetidas}
+        '403': {description: Solo Administrador}
+        '404': {description: Lote inexistente}
+        '409': {description: Serie que ya pertenece a otro lote}
+      security:
+      - bearerAuth: []
+  /api/v1/trazabilidad/series/{numero_serie}:
+    get:
+      summary: Trazabilidad de una unidad por numero de serie
+      parameters:
+      - {name: numero_serie, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Serie con lote, proveedor, venta, tienda y recorrido de sus devoluciones}
+        '404': {description: Serie inexistente}
+      security:
+      - bearerAuth: []
+  /api/v1/trazabilidad/series/{numero_serie}/venta:
+    patch:
+      summary: Liga una serie a la linea de venta donde salio (Administrador u Operador de Almacen)
+      parameters:
+      - {name: numero_serie, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                venta_detalle_id: {type: integer}
+          application/xml:
+            schema: {type: object, xml: {name: serie_venta}}
+      responses:
+        '200': {description: Serie ligada}
+        '404': {description: Serie o linea inexistente}
+        '409': {description: Serie ya vendida, lote distinto o linea sin unidades libres}
+      security:
+      - bearerAuth: []
+  /api/v1/trazabilidad/tasas:
+    get:
+      summary: Tasa de devolucion por proveedor, tienda, producto, lote o ruta
+      description: "Tasa = unidades devueltas / unidades vendidas. En ruta se mide el dano: inspecciones no aptas / inspecciones realizadas. Parametros por, desde, hasta (AAAA-MM-DD). Incluye tasa_promedio_pct y veces_promedio."
+      parameters:
+      - {name: por, in: query, schema: {type: string, enum: [proveedor, tienda, producto, lote, ruta], default: proveedor}}
+      - {name: desde, in: query, schema: {type: string, format: date}}
+      - {name: hasta, in: query, schema: {type: string, format: date}}
+      responses:
+        '200': {description: Tasas ordenadas de mayor a menor}
+        '400': {description: Dimension o fecha invalida}
+        '403': {description: Rol sin permiso}
+      security:
+      - bearerAuth: []
 components:
   securitySchemes:
     bearerAuth:
