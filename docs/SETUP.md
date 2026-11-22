@@ -28,12 +28,55 @@ monolito. La matriz de llamadas esta en
 | logistica | `http://HOST:8003/api/v1/logistica` | `http://HOST:8003/docs` | `:8003/health` |
 | inspecciones | `http://HOST:8004/api/v1/inspecciones` | `http://HOST:8004/docs` | `:8004/health` |
 | reembolsos-costos | `http://HOST:8005/api/v1/reembolsos-costos` | `http://HOST:8005/docs` | `:8005/health` |
-| ventas-catalogos | `http://HOST:8006/api/v1/ventas` y `/catalogos` | `http://HOST:8006/docs` | `:8006/health` |
+| ventas-catalogos | `http://HOST:8006/api/v1/ventas`, `/catalogos` y `/trazabilidad` | `http://HOST:8006/docs` | `:8006/health` |
 | evidencias | `http://HOST:8007/api/v1/evidencias` | `http://HOST:8007/docs` | `:8007/health` |
-| analisis-auditoria | `http://HOST:8008/api/v1/analisis` y `/auditoria` | `http://HOST:8008/docs` | `:8008/health` |
+| analisis-auditoria | `http://HOST:8008/api/v1/auditoria` (y `/analisis`, obsoleto) | `http://HOST:8008/docs` | `:8008/health` |
+| clasificacion-motivos | `http://HOST:8010/api/v1/motivos` | `http://HOST:8010/docs` | `:8010/health` |
+| causa-raiz | `http://HOST:8011/api/v1/causa-raiz` | `http://HOST:8011/docs` | `:8011/health` |
+| proveedores | `http://HOST:8013/api/v1/proveedores` | `http://HOST:8013/docs` | `:8013/health` |
+| reportes-analitica | `http://HOST:8018/api/v1/reportes`, `/graficas` y `/analitica` | `http://HOST:8018/docs` | `:8018/health` |
 
-`HOST` es la IP o dominio de la VM. Los ocho servicios comparten
-`JWT_SECRET`; no debe publicarse ni quedar escrito en el repositorio.
+`HOST` es la IP o dominio de la VM. Todos los servicios comparten
+`JWT_SECRET`; no debe publicarse ni quedar escrito en el repositorio. Los servicios
+`sincronizacion` (8020) e `integraciones-monitoreo` (8021) se levantan igual y estan
+descritos en `docs/GUIA_SINCRONIZACION.md` y `docs/GUIA_INTEGRACIONES_MONITOREO.md`.
+
+### Servicios del tercer parcial: calidad y causa raiz
+
+Agregan las migraciones 040 a 045 y los servicios 8010, 8011, 8013 y 8018, ademas de
+cambios en 8006 y 8008. En la VM:
+
+```bash
+cd ~/Proyecto12
+git pull origin main
+docker compose up -d --build app
+docker compose exec -T app python scripts/migrate.py --estado   # lista las pendientes
+docker compose exec -T app python scripts/migrate.py
+docker compose up -d --build ventas-catalogos analisis-auditoria clasificacion-motivos \
+    proveedores causa-raiz reportes-analitica
+docker compose exec -T app python scripts/seed_demo.py
+```
+
+- **Reconstruye `app` antes de migrar.** La imagen trae `scripts/` y `db/migrations/`;
+  sin reconstruirla, `migrate.py --estado` responde que no hay pendientes aunque el
+  repositorio ya tenga migraciones nuevas.
+- **Respaldo antes de migrar** (fuera del repositorio; nunca se commitean volcados):
+  `docker compose exec -T postgres pg_dump -U devoluciones_app -d devoluciones | gzip > ~/respaldos/antes_de_migrar.sql.gz`.
+  Las migraciones 040 a 045 solo crean tablas, funciones y triggers; no alteran datos
+  existentes.
+- **La migracion 045 vuelve la bitacora de solo agregar**: desde entonces `UPDATE`,
+  `DELETE` y `TRUNCATE` sobre `bitacora` fallan. `GET /api/v1/auditoria/estado` informa si
+  la proteccion esta puesta.
+- **El seed crea el lote `L-2026-PROB-01`** (4 ventas de 6 unidades con 16 devueltas),
+  pensado para la demo de causa raiz: con los datos de demostracion llega a ~2.3 veces
+  el promedio global y es el unico lote que dispararia una alerta. Para reemplazar una
+  version anterior del lote: `docker compose exec -T app python scripts/seed_demo.py --rehacer-lote`.
+  Borra solo lo que creo el seed, se detiene con error si alguien colgo algo del lote
+  (una investigacion, una reclamacion) y no toca la bitacora.
+- **`ANALISIS_HABILITADO`** (servicio `analisis-auditoria` en `docker-compose.yml`): en
+  `"true"` las rutas de analisis obsoletas siguen respondiendo; en `"false"` responden 410 y
+  el servicio queda solo con auditoria. No lo cambies hasta migrar la web, la suite E2E y
+  Postman (`docs/MIGRACION_ANALISIS_8008.md`).
 
 Para validar Compose sin crear un archivo con secretos puede usarse
 `APP_ENV_FILE=.env.example docker compose --env-file .env.example config`.
@@ -359,3 +402,24 @@ docker compose run --rm -v "$PWD":/repo -w /repo -e PYTHONPATH=/repo -e INTEGRAC
 # Integracion de un servicio (ejemplo)
 docker compose run --rm -e INTEGRACION=1 logistica python -m pytest -v tests/test_integracion.py
 ```
+
+**Servicios de calidad y causa raiz.** `scripts/correr_e2e.sh servicios` todavia no incluye
+`clasificacion-motivos`, `proveedores`, `causa-raiz` ni `reportes-analitica`, ni el segundo
+archivo de pruebas de `ventas-catalogos`. Se corren a mano, uno por uno:
+
+```bash
+docker compose run --rm --no-deps -T -e INTEGRACION=1 clasificacion-motivos python -m pytest -v tests/test_integracion.py
+docker compose run --rm --no-deps -T -e INTEGRACION=1 proveedores python -m pytest -v tests/test_integracion.py
+docker compose run --rm --no-deps -T -e INTEGRACION=1 causa-raiz python -m pytest -v tests/test_integracion.py
+docker compose run --rm --no-deps -T -e INTEGRACION=1 reportes-analitica python -m pytest -v tests/test_integracion.py
+docker compose run --rm --no-deps -T -e INTEGRACION=1 analisis-auditoria python -m pytest -v tests/test_integracion.py
+docker compose run --rm --no-deps -T -e INTEGRACION=1 ventas-catalogos python -m pytest -v tests/test_integracion.py tests/test_integracion_trazabilidad.py
+```
+
+- **Deja pasar un minuto entre una suite y otra.** `auth` limita el login a 10 por minuto por
+  IP (H-07 en `docs/PRUEBAS.md`) y cada suite inicia sesion con varios roles; seguidas, la
+  siguiente recibe 429. `correr_e2e.sh` lo evita borrando los contadores entre bloques.
+- La suite de `reportes-analitica` agota a proposito el limite de descargas del
+  Administrador (20 por minuto): no la corras dos veces seguidas.
+- Las pruebas de `analisis-auditoria` dejan unos pocos registros `prueba_integracion_auditoria`
+  en la bitacora. No se pueden borrar: es justo lo que prueban.
