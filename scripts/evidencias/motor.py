@@ -96,6 +96,7 @@ class Corrida:
         self._password = password
         self._n = 0
         self._ocultos = set()
+        self.nombre_cli = servicio   # lo que se escribe tras ejecutar.py; ejecutar.py lo ajusta
 
     # ------------------------------------------------------------------ infraestructura
     def _psql(self, sql):
@@ -255,7 +256,7 @@ class Corrida:
         ahora = ahora or datetime.now(timezone.utc)
         fallas = [c for c in self.casos if not c["ok"]]
         sal = [f"# Evidencia con curl - `{self.servicio}`", "",
-               f"Ejecutada en la VM el {ahora:%Y-%m-%d %H:%M} UTC con `scripts/evidencias/ejecutar.py {self.servicio}`"
+               f"Ejecutada en la VM el {ahora:%Y-%m-%d %H:%M} UTC con `scripts/evidencias/ejecutar.py {self.nombre_cli}`"
                + (f" (commit `{commit[:7]}`)." if commit else "."),
                f"Casos: **{len(self.casos)}**, correctos: **{len(self.casos) - len(fallas)}**, con falla: **{len(fallas)}**. "
                "Los tokens y la contrasena de demo estan ocultos; la IP de la VM se muestra como `$VM_HOST`.", "",
