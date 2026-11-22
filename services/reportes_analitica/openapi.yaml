@@ -1,0 +1,346 @@
+openapi: 3.0.3
+info:
+  title: Reportes y analitica
+  version: v1
+  description: Reportes en JSON, XML, CSV, Excel y PDF, datos para Highcharts, tendencias, pronosticos y anomalias.
+    Solo lectura. La estadistica es explicable y orienta la revision humana; no determina causas (RN-09).
+servers:
+- url: http://localhost:8018
+paths:
+  /health:
+    get:
+      summary: Estado del servicio y sus dependencias
+      responses:
+        '200':
+          description: Servicio ok
+        '503':
+          description: Servicio degradado
+  /api/v1/reportes:
+    get:
+      summary: Catalogo de reportes con sus filtros y formatos
+      responses:
+        '200':
+          description: Reportes disponibles
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: &id001
+      - bearerAuth: []
+  /api/v1/reportes/{nombre}:
+    get:
+      summary: Un reporte en JSON, XML, CSV, Excel o PDF
+      description: 'Reportes: devoluciones, costos, tasas, pareto y tendencia (ver el catalogo para los filtros
+        de cada uno). formato=json (por omision, con pagina y por_pagina) o xml segun Accept; formato=csv, xlsx
+        o pdf descargan el archivo. Limites: csv y xlsx 50000 filas, pdf 3000; si se pasa, 422 y se acota con desde
+        y hasta. Las descargas se limitan a 20 por minuto por usuario y quedan en la bitacora (reporte, formato
+        y numero de filas; nunca los datos). Los archivos no se cachean.'
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: formato
+        in: query
+        schema:
+          type: string
+          enum:
+          - json
+          - csv
+          - xlsx
+          - pdf
+          default: json
+      - name: pagina
+        in: query
+        schema:
+          type: integer
+      - name: por_pagina
+        in: query
+        schema:
+          type: integer
+          maximum: 100
+      - name: desde
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: hasta
+        in: query
+        schema:
+          type: string
+          format: date
+      - name: estado
+        in: query
+        schema:
+          type: string
+      - name: proveedor_id
+        in: query
+        schema:
+          type: integer
+      - name: tienda_id
+        in: query
+        schema:
+          type: integer
+      - name: por
+        in: query
+        schema:
+          type: string
+          enum:
+          - proveedor
+          - tienda
+          - producto
+          - lote
+      - name: dimension
+        in: query
+        schema:
+          type: string
+      - name: medida
+        in: query
+        schema:
+          type: string
+      - name: meses
+        in: query
+        schema:
+          type: integer
+      - name: referencia_id
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Reporte; json/xml paginado, csv/xlsx/pdf como descarga
+        '400':
+          description: Filtro o formato invalido
+        '404':
+          description: Reporte inexistente
+        '422':
+          description: Demasiadas filas para ese formato
+        '429':
+          description: Demasiadas descargas por minuto
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/graficas/{nombre}:
+    get:
+      summary: Opciones de Highcharts listas para pintar (solo JSON)
+      description: 'nombre: pareto, tendencia o tasas. La tendencia incluye la serie observada, la recta, el pronostico
+        y sus limites; los meses sin dato van como null para dejar el hueco.'
+      parameters:
+      - name: nombre
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: dimension
+        in: query
+        schema:
+          type: string
+      - name: medida
+        in: query
+        schema:
+          type: string
+      - name: por
+        in: query
+        schema:
+          type: string
+      - name: meses
+        in: query
+        schema:
+          type: integer
+      - name: referencia_id
+        in: query
+        schema:
+          type: integer
+      - name: horizonte
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 6
+          default: 3
+      - name: desde
+        in: query
+        schema: &id006
+          type: string
+          format: date
+      - name: hasta
+        in: query
+        schema: &id007
+          type: string
+          format: date
+      responses:
+        '200':
+          description: Objeto `opciones` para Highcharts.chart(contenedor, opciones)
+        '400':
+          description: Filtro invalido
+        '404':
+          description: Grafica inexistente
+        '406':
+          description: Solo se entrega en JSON
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/analitica/tendencias:
+    get:
+      summary: Direccion de una serie mensual con su respaldo estadistico
+      description: Regresion lineal; solo habla de tendencia con al menos 6 meses utilizables y si el cambio es
+        distinguible del ruido. En tasa se usan solo meses cuyas ventas ya cumplieron el plazo de devolucion y con
+        20 unidades vendidas o mas.
+      parameters:
+      - name: medida
+        in: query
+        schema: &id002
+          type: string
+          enum:
+          - tasa
+          - devoluciones
+          - costo
+          default: tasa
+      - name: meses
+        in: query
+        schema: &id003
+          type: integer
+          minimum: 6
+          maximum: 36
+          default: 12
+      - name: dimension
+        in: query
+        schema: &id004
+          type: string
+          enum:
+          - proveedor
+          - tienda
+          - producto
+          - lote
+      - name: referencia_id
+        in: query
+        schema: &id005
+          type: integer
+      responses:
+        '200':
+          description: Serie y tendencia (sube, baja, estable o sin_datos)
+        '400':
+          description: Filtro invalido
+        '404':
+          description: Objeto inexistente
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/analitica/pronosticos:
+    get:
+      summary: Pronostico de los siguientes meses con intervalo del 95 %
+      description: Extrapolacion lineal que no considera estacionalidad; confiable solo si la recta explica al menos
+        30 % de la variacion. Es del mes siguiente al ultimo utilizable, no de hoy. Los limites no bajan de 0 y
+        la tasa no pasa de 100.
+      parameters:
+      - name: medida
+        in: query
+        schema: *id002
+      - name: meses
+        in: query
+        schema: *id003
+      - name: dimension
+        in: query
+        schema: *id004
+      - name: referencia_id
+        in: query
+        schema: *id005
+      - name: horizonte
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 6
+          default: 3
+      responses:
+        '200':
+          description: Pronostico, bandas y bandera confiable
+        '400':
+          description: Filtro invalido
+        '404':
+          description: Objeto inexistente
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/analitica/anomalias:
+    get:
+      summary: Objetos o meses atipicos (puntaje z robusto)
+      description: tipo=objetos compara la tasa de cada proveedor, tienda, producto o lote contra sus pares (necesita
+        5 objetos con 20 unidades vendidas o mas); tipo=meses compara cada mes contra la tendencia de su serie.
+        Anomalia con |z| >= 3.5. Una anomalia es un dato distinto, no una causa.
+      parameters:
+      - name: tipo
+        in: query
+        schema:
+          type: string
+          enum:
+          - objetos
+          - meses
+          default: objetos
+      - name: por
+        in: query
+        schema:
+          type: string
+          enum:
+          - proveedor
+          - tienda
+          - producto
+          - lote
+          default: proveedor
+      - name: desde
+        in: query
+        schema: *id006
+      - name: hasta
+        in: query
+        schema: *id007
+      - name: medida
+        in: query
+        schema: *id002
+      - name: meses
+        in: query
+        schema: *id003
+      - name: dimension
+        in: query
+        schema: *id004
+      - name: referencia_id
+        in: query
+        schema: *id005
+      responses:
+        '200':
+          description: Datos con z_robusto y anomalia
+        '400':
+          description: Filtro invalido
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/analitica/alertas-fraude:
+    get:
+      summary: 'Posible fraude: senales explicables (solo Administrador y Analista)'
+      description: 'Frecuencia alta en 90 dias, multiples rechazos o monto reembolsado elevado. Son indicadores
+        preventivos que requieren revision humana; no acusan ni bloquean (RF-25). Nombra clientes: por eso se restringe
+        a Administrador y Analista (RN-15).'
+      responses:
+        '200':
+          description: Alertas con sus razones
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: *id001
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

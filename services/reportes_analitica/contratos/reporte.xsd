@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Respuesta XML de GET /api/v1/reportes/{nombre}?formato=json con Accept: application/xml.
+     Las filas dependen del reporte: columnas dice cuales son (clave, titulo, tipo) y cada
+     <item> de datos trae un elemento por clave. Pensado para validar en la app de escritorio. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="reporte">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reporte" type="xs:string"/>
+        <xs:element name="titulo" type="xs:string"/>
+        <xs:element name="generado_en" type="xs:string"/>
+        <xs:element name="filtros">
+          <xs:complexType><xs:sequence><xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/></xs:sequence></xs:complexType>
+        </xs:element>
+        <xs:element name="columnas">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" minOccurs="1" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="clave" type="xs:string"/>
+                    <xs:element name="titulo" type="xs:string"/>
+                    <xs:element name="tipo">
+                      <xs:simpleType>
+                        <xs:restriction base="xs:string">
+                          <xs:enumeration value="texto"/><xs:enumeration value="entero"/>
+                          <xs:enumeration value="decimal"/><xs:enumeration value="dinero"/>
+                          <xs:enumeration value="fecha"/>
+                        </xs:restriction>
+                      </xs:simpleType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="datos">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType><xs:sequence><xs:any processContents="skip" minOccurs="0" maxOccurs="unbounded"/></xs:sequence></xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="paginacion">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="pagina" type="xs:positiveInteger"/>
+              <xs:element name="por_pagina" type="xs:positiveInteger"/>
+              <xs:element name="total" type="xs:nonNegativeInteger"/>
+              <xs:element name="paginas" type="xs:nonNegativeInteger"/>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

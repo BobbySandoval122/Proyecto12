@@ -210,6 +210,25 @@ services:
       timeout: 5s
       retries: 3
 
+  reportes-analitica:
+    # Tercer parcial, dominios 18 y 19: reportes (JSON, XML, CSV, Excel, PDF),
+    # datos para Highcharts, tendencias, pronosticos y anomalias (RF-26, RF-28).
+    build:
+      context: .
+      dockerfile: services/reportes_analitica/Dockerfile
+    container_name: devoluciones_reportes_analitica
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8018:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   devoluciones:
     # Registro y resolucion de devoluciones (RF-07, RF-10). Usa las tres bases:
     # PostgreSQL (expediente), MongoDB (eventos) y Redis (sesion JWT, limites).

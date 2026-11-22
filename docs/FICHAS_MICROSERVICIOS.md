@@ -106,3 +106,16 @@ Para cada operacion se debe anexar: URL/metodo, objetivo, parametros, headers,
 body JSON o XML, respuesta completa, codigo HTTP, captura Swagger/Postman,
 efecto en PostgreSQL/MongoDB/Redis y al menos un error controlado. El codigo y
 esta ficha no sustituyen esas ejecuciones.
+
+## 13. reportes-analitica — puerto 8018
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Entregar reportes en varios formatos, datos para graficas y analitica (tendencias, pronosticos y anomalias) sobre las devoluciones. |
+| Justificacion | RF-25, RF-26, RF-28, RN-09, RN-15. Reportes y analitica leen los mismos datos agregados y no escriben en el expediente, por eso van juntos (docs/PUERTOS.md). Guia: `docs/GUIA_REPORTES_ANALITICA.md`. |
+| Persistencia | Solo lectura sobre PostgreSQL (devoluciones, ventas, lotes, costos). No tiene tablas propias ni migraciones. Sesion y limite de descargas en Redis. |
+| Endpoints | `GET /reportes`, `GET /reportes/{devoluciones,costos,tasas,pareto,tendencia}?formato=json\|xml\|csv\|xlsx\|pdf`; `GET /graficas/{pareto,tendencia,tasas}`; `GET /analitica/{tendencias,pronosticos,anomalias,alertas-fraude}`; bajo `/api/v1`. |
+| Reglas | Archivos con la biblioteca estandar (CSV a prueba de formulas, XLSX sin formulas, PDF tabular); limites de 50 000 filas en CSV y Excel y 3 000 en PDF; 20 descargas por minuto por usuario; la bitacora guarda reporte, formato y numero de filas, nunca los datos. Series de tasa por cohorte de venta, solo con meses ya maduros (plazo de RN-16) y con al menos 20 unidades; sin tendencia con menos de 6 meses; pronostico con intervalo del 95 %, limitado a 0 y, en tasas, a 100. |
+| Roles | Reportes y analitica: Administrador, Analista, Supervisor y Encargado de Reembolsos. Alertas de fraude: solo Administrador y Analista. Cliente, Inspector y los demas reciben 403. |
+| Despliegue/pruebas | `services/reportes_analitica/Dockerfile`, Compose `reportes-analitica`; 118 pruebas que corren sin base y `test_integracion.py`, que ejecuta todas las consultas en la VM y contrasta las cifras contra la base. |
+
