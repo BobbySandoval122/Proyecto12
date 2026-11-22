@@ -1,8 +1,11 @@
 openapi: 3.0.3
 info:
-  title: Servicio de analisis y auditoria - Plataforma de devoluciones
+  title: Servicio de auditoria (y analisis obsoleto) - Plataforma de devoluciones
   version: 1.0.0
-  description: Analisis de causas con MongoDB - sincronizacion, Pareto (cache Redis, TTL 600 s), clasificacion de motivo, alertas de fraude, eventos y consulta de bitacora. JSON/XML y JWT. RF-22 a RF-26, RF-30.
+  description: 'Auditoria: consulta de la bitacora (solo lectura, solo agrega) y eventos por correlation id. RF-30,
+    RN-12, RNF-23. El analisis (clasificar motivo, Pareto, alertas de fraude, sincronizar, resumen) se separo: su
+    sucesor es clasificacion-motivos (8010) y reportes-analitica (8018). Sus rutas siguen disponibles pero obsoletas
+    hasta que los clientes migren. JSON/XML y JWT.'
 servers:
 - url: /
 paths:
@@ -58,6 +61,10 @@ paths:
         '503': *id008
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sin sucesor (solo contaba snapshots). Sigue
+        funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/analisis/pareto:
     get:
       summary: Pareto MongoDB mediante pipeline; Redis TTL 600s
@@ -102,6 +109,10 @@ paths:
           type: string
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sucesor: reportes-analitica: GET /api/v1/reportes/pareto.
+        Sigue funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/analisis/resumen:
     get:
       summary: Resumen de analítica guardada en MongoDB
@@ -125,6 +136,10 @@ paths:
         '503': *id008
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sin sucesor (solo contaba snapshots). Sigue
+        funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/analisis/clasificar-motivo:
     post:
       summary: Sugiere motivos de forma explicable; requiere confirmacion humana
@@ -134,19 +149,29 @@ paths:
           application/json:
             schema:
               type: object
-              required: [descripcion]
+              required:
+              - descripcion
               properties:
-                descripcion: {type: string, minLength: 10, maxLength: 2000}
-            example: {descripcion: "El producto llego caliente y descongelado"}
+                descripcion:
+                  type: string
+                  minLength: 10
+                  maxLength: 2000
+            example:
+              descripcion: El producto llego caliente y descongelado
           application/xml:
-            schema: {type: object}
-            example: "<clasificacion><descripcion>El producto llego caliente y descongelado</descripcion></clasificacion>"
+            schema:
+              type: object
+            example: <clasificacion><descripcion>El producto llego caliente y descongelado</descripcion></clasificacion>
       responses:
         '200':
           description: Ranking de sugerencias
           content:
-            application/json: {schema: {type: object}}
-            application/xml: {schema: {type: object}}
+            application/json:
+              schema:
+                type: object
+            application/xml:
+              schema:
+                type: object
         '400': *id001
         '401': *id002
         '403': *id003
@@ -155,6 +180,10 @@ paths:
         '503': *id008
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sucesor: clasificacion-motivos: POST /api/v1/motivos/sugerencias.
+        Sigue funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/analisis/alertas-fraude:
     get:
       summary: Detecta indicadores preventivos para revision humana
@@ -162,14 +191,22 @@ paths:
         '200':
           description: Alertas por frecuencia, rechazos o monto
           content:
-            application/json: {schema: {type: object}}
-            application/xml: {schema: {type: object}}
+            application/json:
+              schema:
+                type: object
+            application/xml:
+              schema:
+                type: object
         '401': *id002
         '403': *id003
         '500': *id007
         '503': *id008
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sucesor: reportes-analitica: GET /api/v1/analitica/alertas-fraude.
+        Sigue funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/analisis/eventos:
     get:
       summary: Consulta eventos de auditoría MongoDB
@@ -204,9 +241,13 @@ paths:
           type: string
       security:
       - bearerAuth: []
+      deprecated: true
+      description: 'OBSOLETO: el analisis se separo de la auditoria. Sucesor: este servicio: GET /api/v1/auditoria/eventos.
+        Sigue funcionando igual mientras los clientes migran; con ANALISIS_HABILITADO=false responde 410. Cada respuesta
+        lleva Deprecation: true y, si hay sucesor, Link rel=successor-version. Ver docs/MIGRACION_ANALISIS_8008.md.'
   /api/v1/auditoria:
     get:
-      summary: Consulta bitácora transaccional PostgreSQL
+      summary: Consulta de la bitacora transaccional (solo lectura; solo agrega, no se modifica)
       responses:
         '200':
           description: Consulta bitácora transaccional PostgreSQL
@@ -241,12 +282,111 @@ paths:
         required: false
         schema:
           type: string
+      - name: entidad_id
+        in: query
+        description: Id del registro afectado
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+      - name: usuario_id
+        in: query
+        description: Id de quien hizo la operacion
+        schema:
+          type: string
+          pattern: ^[0-9]+$
+      - name: desde
+        in: query
+        description: Desde este dia (AAAA-MM-DD)
+        schema:
+          type: string
+          format: date
+      - name: hasta
+        in: query
+        description: Hasta este dia incluido (AAAA-MM-DD)
+        schema:
+          type: string
+          format: date
       security:
       - bearerAuth: []
+  /api/v1/auditoria/eventos:
+    get:
+      summary: Eventos publicados por los servicios, por correlation id o servicio (sin el campo datos)
+      responses:
+        '200':
+          description: Consulta eventos de auditoría MongoDB
+          content:
+            application/json:
+              schema:
+                type: object
+            application/xml:
+              schema:
+                type: object
+        '400':
+          description: Parámetros inválidos
+        '401':
+          description: Token inválido
+        '403':
+          description: Sin permisos
+        '404':
+          description: No encontrado
+        '409':
+          description: Conflicto de negocio
+        '415':
+          description: Formato no permitido
+        '500':
+          description: Error interno
+        '503':
+          description: Dependencia no disponible
+      parameters:
+      - name: correlation_id
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: servicio
+        in: query
+        required: false
+        schema:
+          type: string
+      security:
+      - bearerAuth: []
+      description: RNF-23. Ruta de auditoria; /api/v1/analisis/eventos es un alias obsoleto de esta.
+  /api/v1/auditoria/estado:
+    get:
+      summary: Resumen de la bitacora y estado de su proteccion contra modificaciones
+      responses:
+        '200':
+          description: Consulta eventos de auditoría MongoDB
+          content:
+            application/json:
+              schema:
+                type: object
+            application/xml:
+              schema:
+                type: object
+        '400':
+          description: Parámetros inválidos
+        '401':
+          description: Token inválido
+        '403':
+          description: Sin permisos
+        '404':
+          description: No encontrado
+        '409':
+          description: Conflicto de negocio
+        '415':
+          description: Formato no permitido
+        '500':
+          description: Error interno
+        '503':
+          description: Dependencia no disponible
+      security:
+      - bearerAuth: []
+      description: 'Registros, primera y ultima fecha, y si la base bloquea UPDATE, DELETE y TRUNCATE (migracion
+        045). La proteccion es del esquema: frena a la aplicacion o a una inyeccion, no a quien administre PostgreSQL.'
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-

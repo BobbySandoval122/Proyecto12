@@ -2,7 +2,7 @@
 
 Sin dobles: el token sale del servicio auth real por HTTP, la peticion va al
 contenedor de analisis-auditoria y el efecto se verifica en MongoDB, Redis y PostgreSQL. Las filas que crea
-la prueba se borran al terminar. Solo corre en la VM:
+la prueba se borran al terminar, salvo las de la bitacora (es de solo agregar). Solo corre en la VM:
 
     docker compose run --rm -e INTEGRACION=1 analisis-auditoria python -m pytest -v tests/test_integracion.py
 
@@ -10,7 +10,9 @@ Trazabilidad: RNF-28, RF-23, RF-24, RF-25, RN-09, RN-11, RNF-23.
 """
 import json
 import os
+import time
 import unittest
+from datetime import date, timedelta
 import urllib.error
 import urllib.request
 
@@ -202,6 +204,106 @@ class IntegracionAnalisis(unittest.TestCase):
         self.assertEqual(codigo, 403)
         codigo, _ = _http(SERVICIO_URL, "GET", PREFIJO + "/analisis/eventos", token=self.cliente)
         self.assertEqual(codigo, 403)
+
+
+@SKIP
+class IntegracionAuditoria(unittest.TestCase):
+    """La auditoria separada y la proteccion de la bitacora (migracion 045).
+
+    Deja unos pocos registros 'prueba_integracion_auditoria' en la bitacora: es
+    justamente la propiedad que se prueba, no se pueden borrar. Nunca ejecuta
+    TRUNCATE; se comprueba que el trigger exista y este activo.
+    Trazabilidad: RF-30, RN-12, RN-13, RNF-23.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.analista = _login("Analista de Devoluciones")
+        cls.cliente = _login("Cliente")
+        cls.entidad_id = int(time.time()) % 2000000000
+        cls.fila = _sql("""INSERT INTO bitacora (accion, entidad, entidad_id, detalle, correlation_id)
+                           VALUES ('prueba_integracion_auditoria', 'pruebas', %s, 'registro de prueba', 'cid-prueba-aud')
+                           RETURNING id""", (cls.entidad_id,), uno=True)["id"]
+
+    @classmethod
+    def tearDownClass(cls):
+        _logout(cls.analista)
+        _logout(cls.cliente)
+
+    def get(self, ruta, token=None):
+        return _http(SERVICIO_URL, "GET", PREFIJO + ruta, token=token or self.analista)
+
+    def test_la_base_no_deja_modificar_ni_borrar_la_bitacora(self):
+        for sentencia in ("UPDATE bitacora SET detalle = 'alterado' WHERE id = %s",
+                          "UPDATE bitacora SET accion = 'otra' WHERE id = %s",
+                          "UPDATE bitacora SET usuario_id = 1 WHERE id = %s",
+                          "DELETE FROM bitacora WHERE id = %s"):
+            with self.assertRaises(psycopg2.Error, msg=sentencia) as err:
+                _sql(sentencia, (self.fila,))
+            self.assertIn("solo de agregar", str(err.exception), sentencia)
+        intacta = _sql("SELECT accion, detalle FROM bitacora WHERE id = %s", (self.fila,), uno=True)
+        self.assertEqual((intacta["accion"], intacta["detalle"]), ("prueba_integracion_auditoria", "registro de prueba"))
+
+    def test_borrar_a_una_persona_anonimiza_sin_romperse(self):
+        """La unica excepcion: ON DELETE SET NULL de usuarios solo cambia usuario_id."""
+        rol = _sql("SELECT id FROM roles ORDER BY id LIMIT 1", uno=True)["id"]
+        usuario = _sql("""INSERT INTO usuarios (nombre, email, password_hash, rol_id)
+                          VALUES ('Prueba auditoria', %s, 'x', %s) RETURNING id""",
+                       (f"auditoria-{self.entidad_id}@prueba.mx", rol), uno=True)["id"]
+        fila = _sql("""INSERT INTO bitacora (usuario_id, accion, entidad, detalle)
+                       VALUES (%s, 'prueba_integracion_auditoria', 'pruebas', 'de una persona que se borra')
+                       RETURNING id""", (usuario,), uno=True)["id"]
+        _sql("DELETE FROM usuarios WHERE id = %s", (usuario,))
+        despues = _sql("SELECT usuario_id, accion, detalle FROM bitacora WHERE id = %s", (fila,), uno=True)
+        self.assertEqual((despues["usuario_id"], despues["accion"], despues["detalle"]),
+                         (None, "prueba_integracion_auditoria", "de una persona que se borra"))
+
+    def test_estado_dice_que_la_proteccion_esta_completa(self):
+        triggers = {f["tgname"] for f in _sql("SELECT tgname FROM pg_trigger WHERE tgrelid = 'bitacora'::regclass "
+                                              "AND NOT tgisinternal AND tgenabled IN ('O', 'A')")}
+        self.assertLessEqual({"trg_bitacora_inmutable", "trg_bitacora_sin_truncate"}, triggers)
+        codigo, e = self.get("/auditoria/estado")
+        self.assertEqual(codigo, 200)
+        self.assertTrue(e["proteccion"]["completa"])
+        self.assertEqual(e["registros"], _sql("SELECT COUNT(*) AS n FROM bitacora", uno=True)["n"])
+        self.assertEqual(self.get("/auditoria/estado", self.cliente)[0], 403)
+
+    def test_filtros_nuevos_de_la_bitacora(self):
+        base = f"/auditoria?accion=prueba_integracion_auditoria&entidad_id={self.entidad_id}"
+        codigo, r = self.get(base)
+        self.assertEqual((codigo, r["paginacion"]["total"]), (200, 1))
+        self.assertEqual(r["datos"][0]["id"], self.fila)
+        hoy = date.today()
+        manana, ayer = hoy + timedelta(days=1), hoy - timedelta(days=1)
+        self.assertEqual(self.get(f"{base}&desde={hoy}&hasta={hoy}")[1]["paginacion"]["total"], 1)     # el dia completo
+        self.assertEqual(self.get(f"{base}&desde={manana}")[1]["paginacion"]["total"], 0)
+        self.assertEqual(self.get(f"{base}&hasta={ayer}")[1]["paginacion"]["total"], 0)
+        self.assertEqual(self.get(f"{base}&usuario_id=2147483647")[1]["paginacion"]["total"], 0)
+        self.assertEqual(self.get("/auditoria?desde=ayer")[0], 400)
+        self.assertEqual(self.get("/auditoria?entidad_id=abc")[0], 400)
+
+    def test_inyeccion_en_un_filtro_no_hace_nada(self):
+        antes = _sql("SELECT COUNT(*) AS n FROM bitacora", uno=True)["n"]
+        codigo, r = self.get("/auditoria?accion=x%27%3B%20DROP%20TABLE%20bitacora--")
+        self.assertEqual((codigo, r["paginacion"]["total"]), (200, 0))
+        self.assertGreaterEqual(_sql("SELECT COUNT(*) AS n FROM bitacora", uno=True)["n"], antes)
+
+    def test_eventos_en_la_ruta_de_auditoria_y_el_alias_obsoleto_coinciden(self):
+        codigo, nuevo = self.get("/auditoria/eventos?por_pagina=5")
+        self.assertEqual(codigo, 200)
+        self.assertTrue(all("datos" not in e for e in nuevo["datos"]))                 # RNF-16
+        peticion = urllib.request.Request(SERVICIO_URL + PREFIJO + "/analisis/eventos?por_pagina=5",
+                                          headers={"Authorization": f"Bearer {self.analista}"})
+        try:
+            with urllib.request.urlopen(peticion, timeout=15) as resp:
+                alias, cabeceras = json.loads(resp.read()), resp.headers
+        except urllib.error.HTTPError as exc:
+            if exc.code == 410:
+                self.skipTest("El analisis esta retirado (ANALISIS_HABILITADO=false): el alias ya no existe")
+            raise
+        self.assertEqual(alias["paginacion"]["total"], nuevo["paginacion"]["total"])
+        self.assertEqual(cabeceras["Deprecation"], "true")
+        self.assertIn("/api/v1/auditoria/eventos", cabeceras["Link"])
 
 
 if __name__ == "__main__":

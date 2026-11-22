@@ -730,3 +730,42 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 **Documento.** `docs/MONOLITICO_VS_DISTRIBUIDO.md`: donde vive cada regla en los
 dos modos y por que la caida de una API no duplica operaciones.
 
+
+## 2026-11-21 — Separar la auditoria del analisis (Persona 4, servicio 8008)
+
+**Decision: separar por etapas, no de golpe.** La correccion pide que cambiar el
+analisis nunca toque la auditoria. Pero `analisis-auditoria` lo consumen la web
+(modo distribuido), la suite E2E y las colecciones de Postman, y sus sucesores
+(`clasificacion-motivos` 8010 y `reportes-analitica` 8018) seguian en PRs sin
+mergear. Quitar las rutas habria roto a los tres. Por eso esta entrega aisla y
+deprecia, y deja el retiro como etapas documentadas con su lista de pendientes
+(`docs/MIGRACION_ANALISIS_8008.md`); el retiro final es cambiar una variable.
+
+**La separacion se hace cumplir con pruebas, no con una promesa.** `auditoria.py`
+no puede importar el analisis y solo puede tener rutas GET; ambas reglas son
+pruebas. Verifique que la primera detecta una violacion rompiendola a proposito.
+El analisis puede usar a la auditoria (alias de `/eventos`), nunca al reves.
+
+**No hay reenvio automatico a los sucesores.** Las formas de respuesta cambian
+(el Pareto pasa a un reporte paginado, la clasificacion trae submotivos), y un
+proxy habria escondido esas diferencias y hecho depender a la auditoria del
+analisis, que es justo lo que se quiere evitar. Cada respuesta obsoleta avisa con
+`Deprecation: true` y `Link: rel="successor-version"`.
+
+**Proteccion real de la bitacora (migracion 045).** "Ver el historial sin poder
+modificarlo" solo era cierto porque el servicio de auditoria no tiene rutas de
+escritura; pero todos los servicios escriben con la misma cuenta de base de datos,
+asi que un descuido o una inyeccion SQL en cualquiera podia reescribir el rastro.
+Ahora UPDATE, DELETE y TRUNCATE fallan. Unica excepcion: `ON DELETE SET NULL` de
+`usuarios`, que anonimiza `usuario_id` y solo si es el unico cambio de la fila; sin
+esa excepcion, borrar a una persona habria fallado. Se verifico en todo el
+repositorio que nadie actualiza ni borra la bitacora. Alcance: es del esquema; no
+detiene a quien administre PostgreSQL y desactive el trigger. `/auditoria/estado`
+informa si esta puesto y activo para no prometer de mas.
+
+**La auditoria gano lo que le faltaba**: filtros por entidad_id, usuario_id y
+rango de fechas, y la ruta `/auditoria/eventos` (la traza vivia mal ubicada bajo
+`/analisis`). Los eventos nunca devuelven su campo `datos` (RNF-16).
+
+**Pendiente**: migrar la web, la suite E2E y Postman (las evidencias de Postman se
+generaron en la VM y hay que reejecutarlas, no editarlas a mano), y despues cortar.
