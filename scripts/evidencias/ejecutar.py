@@ -8,7 +8,7 @@ codigo distinto de cero si algun caso no cumple lo esperado.
     python3 scripts/evidencias/ejecutar.py clasificacion
     python3 scripts/evidencias/ejecutar.py todos          # uno tras otro, con pausa por el limite de login
 
-Servicios: clasificacion, proveedores, causa_raiz, reportes, ...  (cada uno es un modulo casos_<servicio>.py de esta carpeta).
+Servicios: clasificacion, proveedores, causa_raiz, reportes, trazabilidad, ...  (cada uno es un modulo casos_<servicio>.py de esta carpeta).
 Trazabilidad: RNF-28, RF-31.
 """
 import importlib
@@ -22,7 +22,7 @@ sys.path.insert(0, AQUI)
 
 from motor import Corrida  # noqa: E402
 
-SERVICIOS = ("clasificacion", "proveedores", "causa_raiz", "reportes")   # se amplia a medida que se agregan modulos casos_*.py
+SERVICIOS = ("clasificacion", "proveedores", "causa_raiz", "reportes", "trazabilidad")   # se amplia a medida que se agregan modulos casos_*.py
 SALIDA = os.path.join("docs", "evidencias", "ejecuciones")
 PAUSA_LOGIN = 62                 # el login admite 10 por minuto por IP (RNF-13)
 

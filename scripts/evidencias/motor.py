@@ -36,6 +36,7 @@ USUARIOS = {
     "admin": "pablo.admin@demo.mx", "analista": "josue.analista@demo.mx",
     "cliente": "ana.cliente@demo.mx", "supervisor": "jorge.supervisor@demo.mx",
     "inspector": "valentina.inspector@demo.mx", "reembolsos": "carla.reembolsos@demo.mx",
+    "almacen": "marta.almacen@demo.mx",
 }
 
 
