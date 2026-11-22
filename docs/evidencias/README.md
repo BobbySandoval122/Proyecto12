@@ -296,7 +296,7 @@ o XML, respuesta completa, codigo HTTP, efecto en PostgreSQL y al menos un error
 
 ```bash
 cd ~/Proyecto12                                   # en la VM, con los servicios levantados y seed_demo aplicado
-python3 scripts/evidencias/ejecutar.py clasificacion
+python3 scripts/evidencias/ejecutar.py clasificacion      # tambien: proveedores, causa_raiz, todos
 ```
 
 - Escribe `docs/evidencias/ejecuciones/<servicio>.md`: por cada caso, el `curl` listo para copiar, la
@@ -306,6 +306,8 @@ python3 scripts/evidencias/ejecutar.py clasificacion
 - La contrasena de demo se lee de `PASSWORD_DEMO` o del `.env` de la VM; no se imprime ni va en la linea de
   comandos de `curl` (viaja por stdin). Los tokens salen como `$TOKEN_<ROL>` y cualquier JWT, como `***jwt***`.
 - Los datos que crea cada corrida se borran al terminar (la bitacora no, porque es de solo agregar).
+- Un cuerpo puede llevar el marcador `$PASSWORD_DEMO` (reconfirmar la contrasena para cerrar una investigacion): se envia la
+  real y en el archivo se ve el marcador. El permiso de operacion que emite auth tambien se oculta.
 - El login admite 10 por minuto por IP (RNF-13): `todos` espera 62 s entre servicios.
 - Es solo biblioteca estandar. Las pruebas del propio motor: `python3 -m pytest scripts/evidencias/test_motor.py`.
 - Para agregar un servicio: un modulo `scripts/evidencias/casos_<servicio>.py` con `ejecutar(c)` y registrarlo en
