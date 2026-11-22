@@ -951,3 +951,28 @@ agregar".
 **Para correr las suites de integracion:** `auth` limita los logins a 10 por minuto
 por IP (RNF-13) y cada suite inicia sesion con varios roles. Varias suites seguidas
 reciben 429; hay que dejar pasar un minuto entre ellas. No se toco el limite.
+
+## 2026-11-22 - Analisis de varios factores (Persona 4, correccion del profe)
+
+**Que faltaba.** Solo existian tasas por una dimension. Eso no distingue "el proveedor P es
+malo" de "P es malo solo en la tienda T": ambos casos suben la tasa de P.
+
+**Decision.** `GET /api/v1/analitica/factores?por=&con=` en `reportes-analitica` cruza dos
+dimensiones con venta (proveedor, tienda, producto, lote). Para cada combinacion calcula la
+tasa y su intervalo de Wilson del 95 %, y la lectura dice si el exceso parece venir de un
+factor, del otro, de ambos o de la combinacion.
+
+**Por que Wilson y no un z o una regresion.** Cada unidad vendida se devuelve o no, asi que
+la tasa es una proporcion. El intervalo de Wilson se comporta bien con pocas unidades y con
+tasas cercanas a 0 o 100, y se puede verificar a mano. Una regresion multiple o un modelo
+mas complejo seria menos explicable y el documento pide que el analisis apoye la decision,
+no que la tome (RN-09).
+
+**Criterios.** Una combinacion se juzga con 20 unidades vendidas o mas (igual que el resto
+del servicio); es `distinguible` si el extremo bajo del intervalo supera la tasa promedio
+global. Es `combinacion` si ese extremo supera la tasa de los dos factores por separado.
+
+**Lo que no hace.** No cruza ruta ni transportista (no hay "vendido por ruta"), no cruza mas
+de dos factores y no corrige por comparaciones multiples: con muchas combinaciones alguna
+saldra distinguible por azar (5 % de las que no lo son), por eso es una senal para revisar y
+no una conclusion.

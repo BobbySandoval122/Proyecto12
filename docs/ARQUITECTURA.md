@@ -41,7 +41,7 @@ en `docs/PUERTOS.md`; la ficha de cada servicio, en `docs/FICHAS_MICROSERVICIOS.
 | 8010 | clasificacion-motivos | Categorias de origen de la falla y submotivos con versiones; la sugerencia automatica la revisa una persona | PostgreSQL + Redis | 041 |
 | 8011 | causa-raiz | Alertas, investigaciones, hipotesis, evidencias, acciones CAPA y medicion de su eficacia | PostgreSQL + Redis | 043, 044 |
 | 8013 | proveedores | Indicadores de calidad por proveedor y reclamaciones con seguimiento | PostgreSQL + Redis | 042 |
-| 8018 | reportes-analitica | Reportes (JSON, XML, CSV, Excel, PDF), datos para Highcharts, tendencias, pronosticos y anomalias. Solo lectura | PostgreSQL + Redis | ninguna |
+| 8018 | reportes-analitica | Reportes (JSON, XML, CSV, Excel, PDF), datos para Highcharts, tendencias, pronosticos, anomalias y analisis de varios factores. Solo lectura | PostgreSQL + Redis | ninguna |
 
 ### El flujo de causa raiz
 
