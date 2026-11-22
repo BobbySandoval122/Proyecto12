@@ -240,7 +240,7 @@ class IntegracionAuditoria(unittest.TestCase):
                           "DELETE FROM bitacora WHERE id = %s"):
             with self.assertRaises(psycopg2.Error, msg=sentencia) as err:
                 _sql(sentencia, (self.fila,))
-            self.assertIn("solo de agregar", str(err.exception), sentencia)
+            self.assertIn("solo agregar", str(err.exception), sentencia)
         intacta = _sql("SELECT accion, detalle FROM bitacora WHERE id = %s", (self.fila,), uno=True)
         self.assertEqual((intacta["accion"], intacta["detalle"]), ("prueba_integracion_auditoria", "registro de prueba"))
 

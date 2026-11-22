@@ -917,3 +917,37 @@ rango de fechas, y la ruta `/auditoria/eventos` (la traza vivia mal ubicada bajo
 
 **Pendiente**: migrar la web, la suite E2E y Postman (las evidencias de Postman se
 generaron en la VM y hay que reejecutarlas, no editarlas a mano), y despues cortar.
+
+## 2026-11-22 — Primeras pruebas de integracion en la VM (Persona 4): tres correcciones
+
+Al levantar los servicios en la VM y correr por primera vez las pruebas de
+integracion contra la base real aparecieron tres problemas. **Ninguno estaba en el
+codigo de los servicios**: el SQL, el trigger de la bitacora y los 9 pasos de
+causa raiz funcionaron; fallaron dos pruebas mal escritas y los datos de demo.
+
+**1. El lote problematico de la demo no destacaba (corregido en el seed).** Con la
+base de demostracion (273 unidades vendidas, 60 devueltas, 22 %) mi lote de 96
+unidades y 18.75 % daba 0.85 veces el promedio: no superaba el promedio y no
+habria disparado la alerta de `causa-raiz`. El lote pesaba el 35 % de todo lo
+vendido, asi que ni devolviendo las 96 unidades habria llegado a 2 veces el
+promedio global. Era un error de dimensionamiento, no de la regla: la comparacion
+contra el promedio es correcta, y la base es la que tiene devoluciones altas. El
+lote ahora es de 24 unidades (4 ventas de 6) y devuelve 16 (66.7 %), con lo que
+llega a ~2.3 veces el promedio y supera las 20 unidades y los 3 casos minimos. El
+numero anterior de la entrada del 2026-11-21 (12 ventas, 9 devoluciones, 18.75 %)
+queda reemplazado por este. Para aplicarlo en una base que ya tiene el lote viejo:
+`docker compose exec app python scripts/seed_demo.py --rehacer-lote`, que borra solo
+lo que creo el seed (se detiene con error si alguien colgo algo del lote) y lo
+vuelve a crear.
+
+**2. Prueba de causa raiz mal aislada.** Dos casos abrian una investigacion sobre el
+mismo lote y el segundo recibia 409 `investigacion_activa`, que es justo la regla
+que el servicio debe aplicar. El caso de permisos de CAPA usa ahora su propio lote.
+
+**3. Frase equivocada en una prueba de la bitacora.** El trigger respondio bien
+("La bitacora es de solo agregar: no admite UPDATE"); la prueba buscaba "solo de
+agregar".
+
+**Para correr las suites de integracion:** `auth` limita los logins a 10 por minuto
+por IP (RNF-13) y cada suite inicia sesion con varios roles. Varias suites seguidas
+reciben 429; hay que dejar pasar un minuto entre ellas. No se toco el limite.
