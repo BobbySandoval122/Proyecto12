@@ -25,7 +25,8 @@ from shared.infra import (cerrar_conexion, consultar, ejecutar, limitar,
 from shared.paginacion import leer_paginacion, paginar
 from shared.respuestas import ErrorApi, leer_cuerpo, responder
 from shared.seguridad import (ADMINISTRADOR, ANALISTA, COORDINADOR, ENCARGADO_CENTRO,
-                              INSPECTOR, OPERADOR_ALMACEN, SUPERVISOR, requiere_jwt)
+                              INSPECTOR, OPERADOR_ALMACEN, SUPERVISOR, TODOS_LOS_ROLES,
+                              requiere_jwt)
 
 NOMBRE = "clasificacion-motivos"
 CONTRATOS = os.path.join(os.path.dirname(__file__), "contratos")
@@ -190,7 +191,9 @@ def estado(sid):
 # Sugerencia y revision humana
 # --------------------------------------------------------------------------- #
 @api.post("/sugerencias")
-@requiere_jwt()
+# Sin argumentos, requiere_jwt() solo acepta los roles base y deja fuera a Supervisor y a los
+# roles de campo; este endpoint es "cualquier rol", asi que se nombran todos.
+@requiere_jwt(*TODOS_LOS_ROLES)
 def sugerir_texto():
     """Sugerencia para un texto libre (ej. el formulario del cliente). No guarda nada."""
     limitar("sugerir_motivo", 30, 60, sujeto=str(g.usuario["id"]))

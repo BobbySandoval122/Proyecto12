@@ -78,6 +78,7 @@ class IntegracionClasificacion(unittest.TestCase):
         cls.analista = _login("Analista de Devoluciones")
         cls.inspector = _login("Inspector")
         cls.cliente = _login("Cliente")
+        cls.supervisor = _login("Supervisor")
         cls.codigo = "prueba_integracion"
         cls.devoluciones, cls.limpiar_codigos = [], [cls.codigo]
 
@@ -144,6 +145,9 @@ class IntegracionClasificacion(unittest.TestCase):
         self.assertTrue(r["requiere_confirmacion"])
         self.assertEqual(r["sugerencias"][0]["codigo"], "cadena_frio")
         self.assertNotIn("coincidencias", r["sugerencias"][0])
+        # "Cualquier rol": tambien el Supervisor (con requiere_jwt() sin roles recibia 403).
+        self.assertEqual(self.call("POST", "/sugerencias",
+                                   {"descripcion": "El producto llego tibio y descongelado"}, self.supervisor)[0], 200)
         self.assertEqual(_sql("SELECT COUNT(*) AS n FROM clasificaciones_motivo", uno=True)["n"], antes)
 
     def test_flujo_de_revision_humana_no_toca_la_devolucion(self):
