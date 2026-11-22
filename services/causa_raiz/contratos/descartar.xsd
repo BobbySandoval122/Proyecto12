@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Descartar una alerta (POST /alertas/{id}/descartar); el comentario explica por que. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="descartar">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="comentario" type="xs:string"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

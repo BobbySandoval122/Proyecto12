@@ -215,6 +215,25 @@ services:
       timeout: 5s
       retries: 3
 
+  reportes-analitica:
+    # Tercer parcial, dominios 18 y 19: reportes (JSON, XML, CSV, Excel, PDF),
+    # datos para Highcharts, tendencias, pronosticos y anomalias (RF-26, RF-28).
+    build:
+      context: .
+      dockerfile: services/reportes_analitica/Dockerfile
+    container_name: devoluciones_reportes_analitica
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8018:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   devoluciones:
     # Registro y resolucion de devoluciones (RF-07, RF-10). Usa las tres bases:
     # PostgreSQL (expediente), MongoDB (eventos) y Redis (sesion JWT, limites).
@@ -233,6 +252,25 @@ services:
         condition: service_healthy
     ports:
       - "0.0.0.0:8002:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  causa-raiz:
+    # Tercer parcial, dominios 11 y 12: investigaciones de causa raiz, acciones
+    # correctivas (CAPA) y medicion de su eficacia (RF-24).
+    build:
+      context: .
+      dockerfile: services/causa_raiz/Dockerfile
+    container_name: devoluciones_causa_raiz
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8011:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s
@@ -263,6 +301,25 @@ services:
       timeout: 5s
       retries: 3
 
+  proveedores:
+    # Tercer parcial, dominio 13: proveedores, lo que surten, reclamaciones con
+    # seguimiento e indicadores de calidad (RF-24, RF-26).
+    build:
+      context: .
+      dockerfile: services/proveedores/Dockerfile
+    container_name: devoluciones_proveedores
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8013:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
   integraciones-monitoreo:
     # Tercer parcial, dominios 21 y 22: integraciones con POS, ERP, WMS,
     # transportistas y finanzas, y monitoreo de toda la plataforma. Revisa la
@@ -280,6 +337,25 @@ services:
       redis: {condition: service_healthy}
       mongo: {condition: service_healthy}
     ports: ["0.0.0.0:8021:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  clasificacion-motivos:
+    # Tercer parcial, dominio 10: motivos y submotivos por origen de la falla,
+    # con versiones y revision humana de la sugerencia automatica (RF-22, RN-11).
+    build:
+      context: .
+      dockerfile: services/clasificacion_motivos/Dockerfile
+    container_name: devoluciones_clasificacion_motivos
+    restart: unless-stopped
+    env_file: ${APP_ENV_FILE:-.env}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    ports: ["0.0.0.0:8010:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s

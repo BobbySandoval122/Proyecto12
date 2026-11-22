@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Cambio de estado de una reclamacion (POST /reclamaciones/{id}/seguimiento).
+     Al cerrar se indica resolucion y, si hubo recuperacion, monto_recuperado. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="seguimiento">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="estado">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="enviada"/>
+              <xs:enumeration value="en_analisis"/>
+              <xs:enumeration value="respondida"/>
+              <xs:enumeration value="cerrada"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="comentario" type="xs:string" minOccurs="0"/>
+        <xs:element name="resolucion" minOccurs="0">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="aceptada"/>
+              <xs:enumeration value="parcial"/>
+              <xs:enumeration value="rechazada"/>
+              <xs:enumeration value="retirada"/>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+        <xs:element name="monto_recuperado" type="xs:string" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

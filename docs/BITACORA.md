@@ -731,6 +731,154 @@ El contenedor de la web no trae pytest, asi que la prueba usa unittest.
 dos modos y por que la caida de una API no duplica operaciones.
 
 
+## 2026-11-21 — Clasificacion de motivos (Persona 4, dominio 10)
+
+**Decision.** Servicio propio en el puerto 8010 con cinco categorias de origen
+y doce submotivos iniciales que viven en la migracion 041 (son parte del
+contrato, como los roles de la 008). Cada submotivo apunta a un motivo del
+catalogo existente sin reemplazarlo, asi las devoluciones registradas siguen
+validas y el analisis puede agrupar por origen.
+
+**Versiones.** Cada cambio (incluido activar o desactivar) sube `version` y
+guarda una copia en `submotivos_versiones`, que nunca se edita. Se exige el
+motivo del cambio. Cada clasificacion revisada guarda la version con la que se
+decidio. `PUT` con los mismos datos no crea version: responde `sin_cambios`.
+
+**Revision humana (RN-11).** La sugerencia por palabras clave se guarda como
+`pendiente`; solo una persona la confirma, corrige o descarta, y el servicio no
+toca la devolucion. Una restriccion de la base impide una clasificacion
+definitiva sin responsable. Una palabra coincide solo al inicio de una palabra
+del texto (`caduc` si coincide con `caducado`; `sol` no con `solo`), porque el
+primer intento por fragmentos daba sugerencias absurdas.
+
+**Cliente.** Puede pedir una sugerencia de texto para su formulario, pero la
+respuesta omite las palabras clave y esta limitada a 30 por minuto.
+
+**Pendiente.** `analisis-auditoria` conserva su `clasificar-motivo`; se retira
+al separar la auditoria (bloque final del plan de Persona 4).
+
+## 2026-11-21 — Lotes, series y tasas (Persona 4, dominio 9)
+
+**Decision.** La trazabilidad vive en `ventas-catalogos` (8006) y no en un
+servicio nuevo: lote, serie y venta ya estan en las mismas tablas, y la
+trazabilidad es una consulta sobre ellas (ver `docs/PUERTOS.md`). Se agrega la
+tabla `series_producto` (migracion 040, rango de Persona 4) con `numero_serie`
+UNIQUE global y `venta_detalle_id` nulo mientras la unidad sigue en almacen.
+
+**Tasas.** Para proveedor, tienda, producto y lote la tasa es unidades
+devueltas entre unidades vendidas, con el mismo conteo que `panel.causas`, de
+modo que el panel y el servicio no pueden discrepar. Una ruta no tiene
+"unidades vendidas", asi que ahi se mide el dano: inspecciones no aptas entre
+inspecciones realizadas. Un lote sin ventas devuelve `null`, no 0.
+
+**Seguridad.** Los clientes no consultan trazabilidad (expone proveedores y
+costos internos); la respuesta no incluye datos del cliente (RN-15). Todo es
+informacion para revision humana, no una causa (RN-09).
+
+**Datos de demo.** `crear_lote_problematico` en `scripts/seed_demo.py` crea el
+lote refrigerado `L-2026-PROB-01`: 12 ventas de 8 unidades, 9 devoluciones de 2
+unidades (18.75 %), 6 de ellas en Tienda Centro por una misma ruta. Sin `random`
+e idempotente. Lo necesitan las inspecciones (Persona 3) y la demo de causa raiz.
+
+## 2026-11-21 — Proveedores y reclamaciones (Persona 4, dominio 13)
+
+**Decision.** Servicio propio en el puerto 8013 que NO duplica el alta de
+proveedores: el catalogo sigue en `ventas-catalogos` (8006) y aqui se consulta,
+se mide y se reclama. "Productos que surten" se deduce de `productos` y
+`lotes`, sin tabla nueva, porque un proveedor puede surtir un producto sin ser
+su proveedor principal.
+
+**Reclamaciones.** Tres tablas (migracion 042): la reclamacion con folio
+generado por la base (`RCL-AAAA-####`, como el de devoluciones), las devoluciones
+que la respaldan y una linea de tiempo inmutable. Una restriccion de la base
+obliga a que una reclamacion cerrada diga como termino y a que una abierta no
+traiga resolucion. Que una devolucion no este en dos reclamaciones abiertas
+cruza dos tablas y no cabe en un indice, asi que el servicio bloquea las filas
+de las devoluciones al crear. Solo se acepta o rechaza lo que el proveedor ya
+respondio; retirarla se puede en cualquier momento.
+
+**Indicadores y semaforo.** La tasa es unidades devueltas entre vendidas, con
+el mismo conteo que el panel de causas. El semaforo compara contra el promedio
+de todos los proveedores (atencion desde 1.25 veces, critico desde 2) y devuelve
+`sin_datos` con menos de 20 unidades vendidas: una tasa con pocas ventas
+asusta sin informar. Es una guia para revisar, no un juicio sobre el proveedor
+(RN-09). Los montos se manejan como decimales con dos cifras, nunca como float.
+
+**Acceso.** Por tratar costos y reclamos, solo lo leen Administrador, Analista,
+Supervisor y Encargado de Reembolsos; Cliente e Inspector reciben 403.
+
+## 2026-11-21 — Causa raiz y acciones correctivas (Persona 4, dominios 11 y 12)
+
+**Decision.** Un solo servicio (8011) para la investigacion y las acciones CAPA:
+una accion nace de una investigacion y su eficacia la cierra o la reabre,
+comparten ciclo de vida y responsables. Las investigaciones, hipotesis,
+evidencias y acciones viven en PostgreSQL, no en MongoDB: todas se relacionan
+con devoluciones y usuarios por llave foranea y el flujo necesita transacciones
+(cerrar sin acciones pendientes, no dos investigaciones abiertas del mismo
+objeto). Las evidencias son inmutables y las restricciones de la base impiden
+una conclusion sin responsable ni una hipotesis con campos de otro tipo.
+
+**El analisis no decide (RN-09).** La deteccion solo crea alertas que PROPONEN
+investigar y exige 2 veces el promedio, 20 unidades y 3 casos, para no alarmar
+por ruido. Confirmar una causa exige evidencia y una hipotesis verificada. Una
+investigacion inconclusa se puede cerrar o reabrir.
+
+**Medir si funciono, sin enganarse.** Se compara la tasa de lo vendido antes de
+implementar contra lo vendido despues, por cohorte de venta (una devolucion que
+llega tarde se cuenta con su venta). El primer diseno comparaba hasta hoy y
+tenia un sesgo claro: lo vendido en los ultimos dias todavia puede devolverse,
+asi que cualquier accion parecia efectiva. Ahora "despues" se corta en hoy
+menos el plazo maximo de devolucion (RN-16, tomado de `politicas_devolucion`).
+El periodo "antes" no se recorta: si algo aun no madura, su tasa sale mas baja y
+la meta se vuelve mas dificil; el error es conservador. Con menos de 20 unidades
+en cualquier periodo el veredicto es `sin_datos`, nunca `efectiva`.
+
+**Cierre.** Lo hace un Supervisor distinto del analista y con la reconfirmacion
+de contrasena que David definio para `cerrar_investigacion` en `shared/seguridad.py`.
+Las reglas de negocio se validan ANTES de consumir el permiso (de un solo uso),
+asi un rechazo por reglas no obliga a reconfirmar. El veredicto final no esconde
+fallos: una accion no efectiva, o sin medir, pesa mas que las efectivas.
+
+**Pendiente.** No notifica (le tocara al servicio 8017) y la deteccion no tiene
+reloj propio; se dispara con `POST /alertas/detectar`. Las investigaciones por
+ruta no se soportan porque una ruta no tiene unidades vendidas.
+
+## 2026-11-21 — Reportes y analitica (Persona 4, dominios 18 y 19)
+
+**Decision: PDF y Excel sin librerias.** El documento pide reportes PDF y Excel,
+pero el repo no tiene ninguna libreria para eso y `CLAUDE.md` exige acordar las
+nuevas con el equipo. Se escribieron con la biblioteca estandar: el XLSX es un
+zip de XML con dos hojas y el PDF una tabla en Courier (ancho fijo, asi las
+columnas se alinean sin medir glifos). Se verificaron con `pdftotext`, con
+renderizado y con Quick Look de macOS, no con Excel; las pruebas comprueban la
+estructura (desplazamientos del xref, longitud de cada flujo, XML bien formado,
+ninguna formula). Si el equipo prefiere `reportlab` y `openpyxl`, solo cambia
+`formatos.py`. El costo de esta decision es un PDF sin graficas; para graficas
+estan las opciones de Highcharts.
+
+**Una serie de tasas puede mentir si no se cuida la madurez.** Una tasa por mes
+de venta casi siempre parece bajar en los ultimos meses porque sus devoluciones
+aun no llegan (plazo de 30 dias, RN-16). Sin correccion, cualquier tendencia y
+cualquier pronostico habrian salido optimistas. Las series de tasa solo usan
+meses cuyo fin quedo al menos un plazo atras, y las de devoluciones y costo
+excluyen el mes en curso. Un mes con menos de 20 unidades no entra a la
+regresion. La misma idea se uso en la medicion de eficacia de `causa-raiz`.
+
+**Estadistica explicable.** Regresion lineal con prueba t (la direccion solo se
+afirma si el cambio es distinguible del ruido), intervalo de prediccion del
+95 % que se ensancha al alejarse, y puntaje z robusto (mediana y MAD) para las
+anomalias: el z clasico se deja enganar por el propio valor extremo. Nada de
+esto decide una causa (RN-09).
+
+**Pareto y alertas.** Ahora tambien viven aqui, calculados en PostgreSQL y sin
+el paso de sincronizar que usa `analisis-auditoria`. Ese servicio no se toca:
+se retira al separar la auditoria.
+
+**Seguridad.** Las alertas de fraude nombran clientes y se limitan a
+Administrador y Analista (RN-15). Las descargas se limitan a 20 por minuto, no
+se cachean y quedan en bitacora sin los datos (RNF-16). El CSV neutraliza las
+formulas.
+
 ## 2026-11-21 — Separar la auditoria del analisis (Persona 4, servicio 8008)
 
 **Decision: separar por etapas, no de golpe.** La correccion pide que cambiar el

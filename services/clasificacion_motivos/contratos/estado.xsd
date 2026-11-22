@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Activar o desactivar un submotivo (PATCH /submotivos/{id}/estado). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="estado">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="activo" type="xs:boolean"/>
+        <xs:element name="motivo_cambio" type="xs:string"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -23,12 +23,12 @@ nuevos.
 | 8006 | ventas-catalogos | 6 ventas-catalogos + 9 lotes-trazabilidad | existente |
 | 8007 | evidencias | 7 evidencias (+ videos, firmas, integridad) | existente |
 | 8008 | analisis-auditoria | 8 analisis-auditoria: queda solo **auditoria**; el analisis esta aislado y obsoleto (sucesores: 8010 y 8018) y se retira por etapas, ver `docs/MIGRACION_ANALISIS_8008.md` | **separado** (analisis pendiente de retiro) |
-| 8010 | clasificacion-motivos | 10 clasificacion de motivos | nuevo |
-| 8011 | causa-raiz | 11 causa raiz + 12 acciones correctivas (CAPA) | nuevo |
-| 8013 | proveedores | 13 proveedores | nuevo |
+| 8010 | clasificacion-motivos | 10 clasificacion de motivos | **implementado** |
+| 8011 | causa-raiz | 11 causa raiz + 12 acciones correctivas (CAPA) | **implementado** |
+| 8013 | proveedores | 13 proveedores | **implementado** |
 | 8014 | disposicion-inventario | 14 disposicion + 15 inventario inverso | nuevo |
 | 8017 | notificaciones | 17 notificaciones | nuevo |
-| 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | nuevo |
+| 8018 | reportes-analitica | 18 reportes + 19 analitica predictiva + Pareto y alertas que hoy viven en 8008 | **implementado** (8008 aun conserva lo suyo; se retira al separar la auditoria) |
 | 8020 | sincronizacion | 20 sincronizacion offline | **implementado** |
 | 8021 | integraciones-monitoreo | 21 integraciones + 22 monitoreo | **implementado** |
 

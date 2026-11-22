@@ -1,0 +1,186 @@
+openapi: 3.0.3
+info:
+  title: Clasificacion de motivos
+  version: v1
+  description: >-
+    Motivos y submotivos por origen de la falla (producto, empaque, transporte,
+    error comercial, mal uso), con versiones y revision humana. La sugerencia
+    automatica es solo una propuesta y nunca modifica la devolucion (RN-11).
+    Responde JSON o XML segun Accept; el XML se valida con los XSD de /contratos.
+servers:
+- url: http://localhost:8010
+paths:
+  /health:
+    get:
+      summary: Estado del servicio y sus dependencias
+      responses:
+        '200': {description: Servicio ok}
+        '503': {description: Servicio degradado}
+  /api/v1/motivos/categorias:
+    get:
+      summary: Categorias de origen de la falla
+      responses:
+        '200': {description: Lista de categorias}
+        '401': {description: Sin token}
+        '403': {description: Rol sin permiso}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/submotivos:
+    get:
+      summary: Submotivos vigentes
+      parameters:
+      - {name: categoria_id, in: query, schema: {type: integer}}
+      - {name: solo_activos, in: query, schema: {type: boolean, default: true}}
+      - {name: limite, in: query, schema: {type: integer}}
+      - {name: desplazamiento, in: query, schema: {type: integer}}
+      responses:
+        '200': {description: Pagina de submotivos}
+        '401': {description: Sin token}
+        '403': {description: Rol sin permiso}
+      security: [{bearerAuth: []}]
+    post:
+      summary: Alta de un submotivo (Administrador o Supervisor)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Submotivo'}
+          application/xml:
+            schema: {type: object, xml: {name: submotivo}}
+      responses:
+        '201': {description: Creado en version 1}
+        '400': {description: Datos invalidos}
+        '403': {description: Rol sin permiso}
+        '409': {description: Codigo duplicado o referencia invalida}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/submotivos/{id}:
+    parameters:
+    - {name: id, in: path, required: true, schema: {type: integer}}
+    get:
+      summary: Submotivo con su historial de versiones
+      responses:
+        '200': {description: Submotivo y versiones}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+    put:
+      summary: Edita el submotivo y crea una version nueva
+      description: Exige motivo_cambio (5 a 255 caracteres). Sin cambios reales no crea version.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Submotivo'}
+          application/xml:
+            schema: {type: object, xml: {name: submotivo}}
+      responses:
+        '200': {description: Nueva version o sin_cambios}
+        '400': {description: Datos invalidos}
+        '404': {description: Inexistente}
+        '409': {description: Referencia invalida}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/submotivos/{id}/estado:
+    patch:
+      summary: Activa o desactiva un submotivo (crea version)
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activo: {type: boolean}
+                motivo_cambio: {type: string}
+          application/xml:
+            schema: {type: object, xml: {name: estado}}
+      responses:
+        '200': {description: Estado actualizado}
+        '400': {description: Datos invalidos}
+        '404': {description: Inexistente}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/sugerencias:
+    post:
+      summary: Sugiere submotivos para un texto libre (cualquier rol; no guarda nada)
+      description: Limitado a 30 peticiones por minuto por usuario. No revela las palabras clave.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                descripcion: {type: string, minLength: 10, maxLength: 2000}
+          application/xml:
+            schema: {type: object, xml: {name: sugerencia}}
+      responses:
+        '200': {description: Hasta 3 sugerencias con requiere_confirmacion=true}
+        '400': {description: Descripcion invalida}
+        '429': {description: Demasiadas peticiones}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/clasificaciones:
+    get:
+      summary: Cola de sugerencias (filtra por estado y devolucion_id)
+      parameters:
+      - {name: estado, in: query, schema: {type: string, enum: [pendiente, confirmada, corregida, descartada]}}
+      - {name: devolucion_id, in: query, schema: {type: integer}}
+      responses:
+        '200': {description: Pagina de clasificaciones}
+        '403': {description: Rol sin permiso}
+      security: [{bearerAuth: []}]
+    post:
+      summary: Propone un submotivo para una devolucion y lo deja pendiente
+      description: No modifica la devolucion. Solo una sugerencia pendiente por devolucion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                devolucion_id: {type: integer}
+          application/xml:
+            schema: {type: object, xml: {name: clasificacion}}
+      responses:
+        '201': {description: Sugerencia pendiente de revision humana}
+        '404': {description: Devolucion inexistente}
+        '409': {description: Ya hay una sugerencia pendiente}
+      security: [{bearerAuth: []}]
+  /api/v1/motivos/clasificaciones/{id}/revision:
+    post:
+      summary: Revision humana de una sugerencia
+      description: confirmar, corregir (submotivo_id y comentario) o descartar (comentario). Una vez revisada no se puede revisar otra vez.
+      parameters:
+      - {name: id, in: path, required: true, schema: {type: integer}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision: {type: string, enum: [confirmar, corregir, descartar]}
+                submotivo_id: {type: integer}
+                comentario: {type: string, maxLength: 500}
+          application/xml:
+            schema: {type: object, xml: {name: revision}}
+      responses:
+        '200': {description: Clasificacion revisada; aplicado_a_devolucion=false}
+        '400': {description: Decision invalida o sin sugerencia que confirmar}
+        '404': {description: Inexistente}
+        '409': {description: Ya revisada o submotivo inactivo}
+      security: [{bearerAuth: []}]
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    Submotivo:
+      type: object
+      required: [categoria_id, nombre]
+      properties:
+        categoria_id: {type: integer}
+        motivo_id: {type: integer, nullable: true}
+        codigo: {type: string, pattern: '^[a-z0-9_]{3,40}$', description: Solo en el alta}
+        nombre: {type: string, maxLength: 100}
+        descripcion: {type: string, maxLength: 255}
+        palabras_clave: {type: array, maxItems: 30, items: {type: string}}
+        motivo_cambio: {type: string, description: Obligatorio en la edicion}
