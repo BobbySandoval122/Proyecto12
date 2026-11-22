@@ -147,6 +147,11 @@ gcloud compute firewall-rules create permitir-8000 \
 
 Despues se entra en `http://IP_EXTERNA_DE_LA_VM:8000`.
 
+Los microservicios (8001 a 8021) tienen sus propias reglas y solo aceptan las IPs del
+equipo; el detalle, como comprobarlo y como agregar una IP estan en `docs/PUERTOS.md`
+(seccion "Firewall de GCP"). Si desde tu casa un `/health` no responde, casi seguro tu
+IP no esta en la regla; desde la VM siempre responde con `localhost`.
+
 PostgreSQL y Redis estan publicados solo en `127.0.0.1` dentro de la VM, asi que
 no quedan expuestos a internet aunque el puerto 8000 si lo este. Se publican en
 los puertos **55432** y **56379** del host, no en los estandar, porque la VM ya
