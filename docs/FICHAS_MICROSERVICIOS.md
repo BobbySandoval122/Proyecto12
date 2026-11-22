@@ -71,7 +71,7 @@ en `/contratos/<archivo>.xsd`, Dockerfile propio y `/health`.
 | Proposito | Consultar ventas/lineas y administrar siete catalogos reales. |
 | Justificacion | RF-05 y RF-06; fuente para validar producto, lote, proveedor y motivo. |
 | Persistencia | PostgreSQL; tablas y columnas dinamicas limitadas por listas blancas; sesion Redis. |
-| Endpoints | `GET /ventas`, `GET /ventas/{id}`, CRUD y estado bajo `/catalogos/{nombre}`. |
+| Endpoints | `GET /ventas`, `GET /ventas/{id}`, CRUD y estado bajo `/catalogos/{nombre}`; trazabilidad (dominio 9) bajo `/trazabilidad`: `GET /lotes`, `GET /lotes/{id}`, `POST /lotes/{id}/series`, `GET /series/{serie}`, `PATCH /series/{serie}/venta`, `GET /tasas`. |
 | Reglas | Clientes solo ven sus ventas y motivos activos; referencias activas; paginacion y busqueda limitada. |
 | Roles | Lectura autenticada con restricciones; escritura solo Administrador. |
 | Despliegue/pruebas | Dockerfile y Compose propios; 8 pruebas puras de validacion. |
@@ -106,6 +106,42 @@ Para cada operacion se debe anexar: URL/metodo, objetivo, parametros, headers,
 body JSON o XML, respuesta completa, codigo HTTP, captura Swagger/Postman,
 efecto en PostgreSQL/MongoDB/Redis y al menos un error controlado. El codigo y
 esta ficha no sustituyen esas ejecuciones.
+
+## 10. clasificacion-motivos — puerto 8010
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Clasificar el origen de la falla en categorias y submotivos, con versiones y revision humana de la sugerencia automatica. |
+| Justificacion | RF-22, RN-09, RN-11, RN-12. El analisis de causa raiz necesita saber si la falla fue del producto, del empaque, del transporte, comercial o de mal uso; el catalogo plano `motivos` no lo distingue. |
+| Persistencia | PostgreSQL: `categorias_motivo`, `submotivos`, `submotivos_versiones`, `clasificaciones_motivo` (migracion 041); sesion y limite de uso en Redis. |
+| Endpoints | `GET /categorias`, `GET/POST /submotivos`, `GET/PUT /submotivos/{id}`, `PATCH /submotivos/{id}/estado`, `POST /sugerencias`, `GET/POST /clasificaciones`, `POST /clasificaciones/{id}/revision`, todos bajo `/api/v1/motivos`. |
+| Reglas | Cada edicion crea una version y exige explicar el cambio; la sugerencia nunca modifica la devolucion; una sola sugerencia pendiente por devolucion; corregir o descartar exige comentario; una clasificacion revisada no se revisa otra vez. |
+| Roles | Lectura del catalogo: roles internos. Alta y edicion: Administrador y Supervisor. Revision: Analista, Supervisor y Administrador. `POST /sugerencias` lo puede usar cualquier rol (30 por minuto) y no revela las palabras clave. |
+| Despliegue/pruebas | `services/clasificacion_motivos/Dockerfile`, Compose `clasificacion-motivos`; 67 pruebas que corren sin base y `test_integracion.py` en la VM. El `clasificar-motivo` de `analisis-auditoria` (8008) sigue vigente hasta separar la auditoria. |
+
+## 11. proveedores — puerto 8013
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Consultar proveedores, lo que surten y sus indicadores de calidad, y dar seguimiento a las reclamaciones que se les hacen. |
+| Justificacion | RF-24, RF-26, RN-09, RN-12. Cuando varias devoluciones apuntan al mismo proveedor o lote, la empresa debe poder reclamar, seguir la respuesta y saber cuanto recupero. El alta del catalogo de proveedores sigue en `ventas-catalogos` (8006). |
+| Persistencia | PostgreSQL: `reclamaciones_proveedor`, `reclamacion_devoluciones`, `seguimiento_reclamacion` (migracion 042); lee `proveedores`, `lotes`, `devoluciones`, `inspecciones_ref` y `vista_costo_devolucion`. Sesion en Redis. |
+| Endpoints | `GET /proveedores`, `GET /proveedores/{id}`, `/productos`, `/indicadores`; `GET/POST /proveedores/reclamaciones`, `GET /reclamaciones/{id}`, `POST /reclamaciones/{id}/seguimiento`, bajo `/api/v1`. |
+| Reglas | El lote y las devoluciones deben ser del proveedor; una devolucion no esta en dos reclamaciones abiertas; transiciones de estado controladas; aceptar, aceptar parcialmente o rechazar solo tras la respuesta del proveedor; no se recupera mas de lo reclamado; cerrar exige resolucion y comentario. El semaforo no califica con menos de 20 unidades vendidas. |
+| Roles | Lectura: Administrador, Analista, Supervisor y Encargado de Reembolsos. Crear y dar seguimiento: Administrador, Analista y Supervisor. Cliente e Inspector reciben 403. |
+| Despliegue/pruebas | `services/proveedores/Dockerfile`, Compose `proveedores`; 74 pruebas que corren sin base y `test_integracion.py` en la VM. |
+
+## 12. causa-raiz — puerto 8011
+
+| Elemento | Implementacion |
+|---|---|
+| Proposito | Llevar una investigacion de causa raiz de principio a fin: alerta, evidencia, hipotesis, verificacion, conclusion, acciones correctivas (CAPA), medicion de su eficacia y cierre. |
+| Justificacion | RF-23, RF-24, RN-09, RN-11, RN-12. Es el flujo de 9 pasos que pidio el profe; hasta ahora el panel de causas mostraba patrones pero nada obligaba a investigarlos ni dejaba rastro de quien concluyo que. Una accion CAPA nace de una investigacion y su eficacia la reabre o la cierra, por eso van juntas (docs/PUERTOS.md). Guia: `docs/GUIA_CAUSA_RAIZ.md`. |
+| Persistencia | PostgreSQL: `alertas_patron`, `investigaciones`, `hipotesis`, `evidencias_investigacion`, `seguimiento_investigacion` (migracion 043), `acciones_capa`, `mediciones_eficacia` (044); lee ventas, lotes y devoluciones. Sesion y permiso de operacion critica en Redis. |
+| Endpoints | `POST /alertas/detectar`, `GET /alertas`, `POST /alertas/{id}/descartar` e `/investigar`; `GET/POST /investigaciones`, `GET /investigaciones/{id}`, `/hipotesis`, `/evidencias`, `/verificacion`, `/hipotesis/{id}/verificacion`, `/conclusion`, `/reabrir`, `/acciones`, `/cierre`; `GET /acciones`, `GET /acciones/{id}`, `POST /acciones/{id}/estado` y `/mediciones`; todos bajo `/api/v1/causa-raiz`. |
+| Reglas | Estados sin saltos; un objeto no tiene dos investigaciones abiertas; evidencia inmutable y del objeto investigado; cinco porques en cadena de hasta 5 niveles sin ramificar; confirmar una causa exige evidencia y una hipotesis verificada; las acciones exigen causa confirmada, responsable interno activo y fecha no pasada; la eficacia se mide por cohorte de venta sin contar lo que aun puede devolverse y nunca da `efectiva` con menos de 20 unidades; cierre por un supervisor distinto del analista. |
+| Roles | Operar: Administrador, Analista y Supervisor. Cerrar: solo Supervisor, con la reconfirmacion de contrasena de `auth` (`cerrar_investigacion`, un solo uso). Cada responsable ve y mueve solo sus acciones; las ajenas responden 404. |
+| Despliegue/pruebas | `services/causa_raiz/Dockerfile`, Compose `causa-raiz`; 132 pruebas que corren sin base (reglas, XSD y que toda ruta exija JWT) y `test_integracion.py`, que recorre los 9 pasos en la VM. |
 
 ## 13. reportes-analitica — puerto 8018
 

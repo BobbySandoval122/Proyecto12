@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Medicion de eficacia (POST /acciones/{id}/mediciones); ambos campos son opcionales. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="medicion">
+    <xs:complexType>
+      <xs:all>
+        <xs:element name="ventana_antes_dias" type="xs:string" minOccurs="0"/>
+        <xs:element name="hasta" type="xs:string" minOccurs="0"/>
+      </xs:all>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

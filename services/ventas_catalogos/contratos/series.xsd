@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Alta de numeros de serie de un lote (POST /api/v1/trazabilidad/lotes/{id}/series). -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="lote_series">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="series">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="item" minOccurs="1" maxOccurs="500">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:pattern value="[A-Za-z0-9._\-]{1,60}"/>
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

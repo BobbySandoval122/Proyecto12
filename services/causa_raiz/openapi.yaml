@@ -1,0 +1,653 @@
+openapi: 3.0.3
+info:
+  title: Causa raiz y acciones correctivas
+  version: v1
+  description: Flujo de investigacion de causa raiz de 9 pasos con acciones CAPA y medicion de eficacia. El analisis
+    apoya; cada decision es humana (RN-09, RN-11). JSON o XML segun Accept; el XML se valida con los XSD de /contratos.
+servers:
+- url: http://localhost:8011
+paths:
+  /health:
+    get:
+      summary: Estado del servicio y sus dependencias
+      responses:
+        '200':
+          description: Servicio ok
+        '503':
+          description: Servicio degradado
+  /api/v1/causa-raiz/alertas/detectar:
+    post:
+      summary: Busca patrones y deja alertas (paso 1 y 2)
+      description: Una alerta exige tasa de al menos 2 veces el promedio, 20 unidades vendidas y 3 casos. Repetir
+        la deteccion actualiza las alertas abiertas, no las duplica. Las alertas proponen; no abren investigaciones.
+      responses:
+        '200':
+          description: Alertas nuevas y actualizadas
+        '401':
+          description: Sin token
+        '403':
+          description: Rol sin permiso
+      security: &id001
+      - bearerAuth: []
+  /api/v1/causa-raiz/alertas:
+    get:
+      summary: Alertas
+      parameters:
+      - name: estado
+        in: query
+        schema:
+          type: string
+          enum:
+          - abierta
+          - investigando
+          - descartada
+      - name: dimension
+        in: query
+        schema:
+          type: string
+          enum:
+          - lote
+          - proveedor
+          - tienda
+          - producto
+      responses:
+        '200':
+          description: Pagina de alertas
+        '403':
+          description: Rol sin permiso
+      security: *id001
+  /api/v1/causa-raiz/alertas/{id}/descartar:
+    post:
+      summary: Descarta una alerta explicando por que
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comentario:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: descartar
+      responses:
+        '200':
+          description: Descartada
+        '400':
+          description: Comentario invalido
+        '409':
+          description: Alerta ya resuelta
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/alertas/{id}/investigar:
+    post:
+      summary: Abre la investigacion que propone la alerta (paso 3)
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                titulo:
+                  type: string
+                descripcion:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: investigacion
+      responses:
+        '201':
+          description: Investigacion abierta con su linea base
+        '409':
+          description: Alerta ya resuelta u objeto ya investigado
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones:
+    get:
+      summary: Investigaciones
+      parameters:
+      - name: estado
+        in: query
+        schema:
+          type: string
+          enum:
+          - abierta
+          - en_verificacion
+          - concluida
+          - en_accion
+          - en_medicion
+          - cerrada
+      - name: dimension
+        in: query
+        schema:
+          type: string
+      - name: analista_id
+        in: query
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Pagina de investigaciones
+      security: *id001
+    post:
+      summary: Abre una investigacion manual
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                dimension:
+                  type: string
+                  enum:
+                  - lote
+                  - proveedor
+                  - tienda
+                  - producto
+                referencia_id:
+                  type: integer
+                titulo:
+                  type: string
+                descripcion:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: investigacion
+      responses:
+        '201':
+          description: Abierta
+        '404':
+          description: El objeto no existe
+        '409':
+          description: El objeto ya tiene una investigacion sin cerrar
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}:
+    get:
+      summary: 'Expediente completo: hipotesis, evidencias, acciones y linea de tiempo'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Investigacion
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/hipotesis:
+    post:
+      summary: Agrega una hipotesis (paso 4)
+      description: '5 porques: sin padre_id es el nivel 1; con padre_id, el nivel siguiente (maximo 5, sin ramificar).
+        Ishikawa exige categoria_ishikawa.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                  - cinco_porques
+                  - ishikawa
+                  - libre
+                descripcion:
+                  type: string
+                padre_id:
+                  type: integer
+                categoria_ishikawa:
+                  type: string
+                  enum:
+                  - material
+                  - metodo
+                  - maquina
+                  - mano_de_obra
+                  - medicion
+                  - medio_ambiente
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: hipotesis
+      responses:
+        '201':
+          description: Creada
+        '400':
+          description: Datos invalidos
+        '409':
+          description: Investigacion no editable, porque sin padre valido, cadena completa o porque ya continuado
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/evidencias:
+    post:
+      summary: Agrega una evidencia inmutable (paso 3)
+      description: Una devolucion citada debe pertenecer al objeto investigado.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                  - devolucion
+                  - inspeccion
+                  - dato
+                  - documento
+                  - nota
+                descripcion:
+                  type: string
+                devolucion_id:
+                  type: integer
+                hipotesis_id:
+                  type: integer
+                referencia_externa:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: evidencia
+      responses:
+        '201':
+          description: Creada
+        '400':
+          description: Datos invalidos
+        '409':
+          description: Investigacion no editable o devolucion ajena al objeto
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/verificacion:
+    post:
+      summary: Pasa a verificacion (paso 5); exige al menos una hipotesis
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: verificacion
+      responses:
+        '200':
+          description: En verificacion
+        '409':
+          description: Sin hipotesis o transicion invalida
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/hipotesis/{hid}/verificacion:
+    post:
+      summary: Verifica o descarta una hipotesis
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: hid
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resultado:
+                  type: string
+                  enum:
+                  - verificada
+                  - descartada
+                resultado_verificacion:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: verificacion
+      responses:
+        '200':
+          description: Resultado registrado
+        '409':
+          description: Fuera de verificacion o ya verificada
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/conclusion:
+    post:
+      summary: Causa confirmada o inconclusa (paso 6)
+      description: Confirmar exige causa_raiz, al menos una evidencia y una hipotesis verificada (RN-09).
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                conclusion:
+                  type: string
+                  enum:
+                  - causa_confirmada
+                  - inconclusa
+                causa_raiz:
+                  type: string
+                justificacion:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: conclusion
+      responses:
+        '200':
+          description: Concluida
+        '409':
+          description: Sin evidencia, sin hipotesis verificada o transicion invalida
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/reabrir:
+    post:
+      summary: Reabre una investigacion inconclusa
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comentario:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: cierre
+      responses:
+        '200':
+          description: En verificacion
+        '409':
+          description: Solo las inconclusas se reabren
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/acciones:
+    post:
+      summary: Crea una accion CAPA con responsable y fecha (paso 7)
+      description: 'Solo con causa confirmada. El responsable debe ser personal interno activo. meta_reduccion_pct
+        por omision: 30.'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo:
+                  type: string
+                  enum:
+                  - correctiva
+                  - preventiva
+                descripcion:
+                  type: string
+                responsable_id:
+                  type: integer
+                fecha_compromiso:
+                  type: string
+                  format: date
+                meta_reduccion_pct:
+                  type: string
+                  example: '30'
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: accion
+      responses:
+        '201':
+          description: Planificada
+        '400':
+          description: Datos invalidos
+        '409':
+          description: Causa no confirmada o responsable invalido
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/investigaciones/{id}/cierre:
+    post:
+      summary: Cierra la investigacion (paso 9)
+      description: Solo un Supervisor distinto del analista. Exige el header X-Autorizacion-Operacion emitido por
+        POST /api/v1/auth/autorizar-operacion (operacion cerrar_investigacion, recurso_id = id de la investigacion);
+        el permiso vale una vez.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                comentario:
+                  type: string
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: cierre
+      responses:
+        '200':
+          description: Cerrada con veredicto_final
+        '403':
+          description: No es supervisor o falta la reconfirmacion de contrasena
+        '409':
+          description: Cierre no independiente, acciones pendientes o sin medir
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/acciones:
+    get:
+      summary: Acciones CAPA
+      description: Los operadores ven todas; cada responsable ve solo las suyas.
+      parameters:
+      - name: estado
+        in: query
+        schema:
+          type: string
+      - name: responsable_id
+        in: query
+        schema:
+          type: integer
+      - name: investigacion_id
+        in: query
+        schema:
+          type: integer
+      - name: vencidas
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Pagina de acciones
+      security: *id001
+  /api/v1/causa-raiz/acciones/{id}:
+    get:
+      summary: Accion con su historial de mediciones
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Accion
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/acciones/{id}/estado:
+    post:
+      summary: 'Avanza la accion: en_curso, implementada o cancelada'
+      description: Implementar fija la fecha desde la que se mide. Cancelar exige comentario. La mueve su responsable
+        o un operador.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                estado:
+                  type: string
+                  enum:
+                  - en_curso
+                  - implementada
+                  - cancelada
+                comentario:
+                  type: string
+                fecha_implementacion:
+                  type: string
+                  format: date
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: estado_accion
+      responses:
+        '200':
+          description: Estado actualizado
+        '400':
+          description: Datos invalidos
+        '409':
+          description: Transicion invalida
+        '404':
+          description: No existe
+      security: *id001
+  /api/v1/causa-raiz/acciones/{id}/mediciones:
+    post:
+      summary: 'Mide la eficacia: tasa de lo vendido antes contra despues (paso 8)'
+      description: Cohortes de venta. 'Despues' se corta en hoy menos el plazo maximo de devolucion, porque lo vendido
+        recientemente aun puede devolverse. Con menos de 20 unidades vendidas en algun periodo el veredicto es sin_datos,
+        nunca efectiva. Efectiva si la reduccion alcanza la meta.
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ventana_antes_dias:
+                  type: integer
+                  example: 90
+                hasta:
+                  type: string
+                  format: date
+          application/xml:
+            schema:
+              type: object
+              xml:
+                name: medicion
+      responses:
+        '201':
+          description: Medicion con veredicto
+        '409':
+          description: Accion no implementada
+        '404':
+          description: No existe
+      security: *id001
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
