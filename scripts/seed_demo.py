@@ -370,20 +370,33 @@ def backfill_fecha_cierre(cur):
 
 
 LOTE_PROBLEMATICO = "L-2026-PROB-01"
+UNIDADES_POR_VENTA = 6
+# Una fila por venta: (indice de tienda, unidades devueltas, estado, motivo). Centro (0) concentra 3 de 4.
+CASOS_LOTE_PROBLEMATICO = [
+    (0, 4, "cerrada", "frio"), (0, 4, "cerrada", "frio"),
+    (0, 4, "en_inspeccion", "danado"), (1, 4, "autorizada", "frio"),
+]
 
 
 def crear_lote_problematico(cur, usuarios, clientes):
     """Lote refrigerado con devoluciones recurrentes, para la demo de causa raiz.
 
-    La demo del tercer parcial pide "un lote con problemas recurrentes": 12
-    ventas de 8 unidades del mismo lote de leche; 9 de ellas regresan 2
-    unidades cada una (18 de 96, 18.75 %), casi todas por cadena de frio rota y
-    6 de las 9 en Tienda Centro por la ruta Centro -> Centro de Devoluciones.
-    Asi las tasas por lote, tienda y ruta senalan el mismo patron.
+    La demo del tercer parcial pide "un lote con problemas recurrentes": 4 ventas
+    de 6 unidades del mismo lote de leche que devuelven 4 unidades cada una (16 de
+    24, 66.7 %), casi todas por cadena de frio rota y 3 de las 4 en Tienda Centro
+    por una misma ruta. Asi las tasas por lote, tienda y ruta senalan el mismo patron.
+
+    EL TAMANO IMPORTA. El lote pesa en el promedio global contra el que se compara
+    (la alerta pide al menos 2 veces el promedio). La base de demostracion es chica y
+    de devoluciones altas (273 unidades vendidas, 60 devueltas, 22 %): un lote de 96
+    unidades era el 35 % de todo lo vendido y ni devolviendo todo habria llegado a 2
+    veces el promedio. Con 24 unidades y 66.7 % llega a ~2.3 veces y supera las 20
+    unidades y los 3 casos minimos para alertar. Se comprobo en la VM.
 
     No usa random (no altera los datos reproducibles del resto del seed) y es
-    idempotente: si el lote ya existe no hace nada. Las series PROB01-#### se
-    ligan a las lineas de venta (migracion 040). Trazabilidad: RF-23, RF-24.
+    idempotente: si el lote ya existe no hace nada (para rehacerlo, --rehacer-lote).
+    Las series PROB01-#### se ligan a las lineas de venta (migracion 040).
+    Trazabilidad: RF-23, RF-24.
     """
     cur.execute("SELECT 1 FROM lotes l JOIN productos p ON p.id = l.producto_id "
                 "WHERE l.numero_lote = %s AND p.sku = 'LAC-001'", (LOTE_PROBLEMATICO,))
@@ -397,7 +410,7 @@ def crear_lote_problematico(cur, usuarios, clientes):
     danado = cur.fetchone()
     cur.execute("SELECT id, nombre FROM tiendas ORDER BY id")
     tiendas = cur.fetchall()
-    if not (producto and frio and danado and len(tiendas) >= 3):
+    if not (producto and frio and danado and len(tiendas) >= 2):
         return 0
     cur.execute("SELECT id FROM rutas WHERE origen = %s ORDER BY id LIMIT 1",
                 (tiendas[0]["nombre"],))
@@ -417,45 +430,38 @@ def crear_lote_problematico(cur, usuarios, clientes):
     inspector = usuarios["valentina.inspector@demo.mx"]
     encargado = usuarios["roberto.centro@demo.mx"]
     coordinador = usuarios["david.logistica@demo.mx"]
-    # Ventas 1-6 en Tienda Centro, 7-9 en Valle Oriente, 10-12 en Cumbres (sin devolucion).
-    tienda_de = [0] * 6 + [1] * 3 + [2] * 3
-    # Estado de las 9 devoluciones: tres cerradas, tres en inspeccion, tres autorizadas.
-    estados = ["cerrada"] * 3 + ["en_inspeccion"] * 3 + ["autorizada"] * 3
     serie = 0
-    for n in range(12):
+    for n, (tienda_i, devueltas, estado, clave_motivo) in enumerate(CASOS_LOTE_PROBLEMATICO):
         cur.execute(
             """INSERT INTO ventas (folio_venta, cliente_id, tienda_id, fecha_venta)
                VALUES (%s, %s, %s, %s) RETURNING id""",
             (f"VTA-PROB-{n + 1:02d}", clientes[n % len(clientes)],
-             tiendas[tienda_de[n]]["id"], date(2026, 10, 1) + timedelta(days=n)),
+             tiendas[tienda_i]["id"], date(2026, 10, 1) + timedelta(days=n)),
         )
         venta_id = cur.fetchone()["id"]
         cur.execute(
             """INSERT INTO venta_detalle (venta_id, lote_id, cantidad, precio_unitario)
-               VALUES (%s, %s, 8, 32.50) RETURNING id""",
-            (venta_id, lote_id),
+               VALUES (%s, %s, %s, 32.50) RETURNING id""",
+            (venta_id, lote_id, UNIDADES_POR_VENTA),
         )
         detalle_id = cur.fetchone()["id"]
-        for _ in range(8):
+        for _ in range(UNIDADES_POR_VENTA):
             serie += 1
             cur.execute(
                 """INSERT INTO series_producto (lote_id, numero_serie, venta_detalle_id)
                    VALUES (%s, %s, %s)""",
                 (lote_id, f"PROB01-{serie:04d}", detalle_id),
             )
-        if n >= 9:
-            continue
-        estado = estados[n]
-        motivo = danado["id"] if n in (2, 7) else frio["id"]
+        motivo = frio["id"] if clave_motivo == "frio" else danado["id"]
         cur.execute(
             """INSERT INTO devoluciones (venta_detalle_id, motivo_id, descripcion_problema,
                                          cantidad_devuelta, estado, analista_id,
                                          fecha_solicitud, fecha_autorizacion)
-               VALUES (%s, %s, %s, 2, %s, %s, %s, %s) RETURNING id, folio_devolucion""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id, folio_devolucion""",
             (detalle_id, motivo,
-             "El producto llego tibio y con mal olor." if motivo == frio["id"]
+             "El producto llego tibio y con mal olor." if clave_motivo == "frio"
              else "El empaque llego abollado y con fuga.",
-             estado, analista,
+             devueltas, estado, analista,
              date(2026, 10, 3) + timedelta(days=n), date(2026, 10, 4) + timedelta(days=n)),
         )
         dev = cur.fetchone()
@@ -491,7 +497,37 @@ def crear_lote_problematico(cur, usuarios, clientes):
                 """INSERT INTO disposiciones (devolucion_id, analista_id, destino, justificacion)
                    VALUES (%s, %s, 'desecho', 'Producto refrigerado fuera de temperatura.')""",
                 (dev["id"], analista))
-    return 12
+    return len(CASOS_LOTE_PROBLEMATICO)
+
+
+def retirar_lote_problematico(cur):
+    """Borra SOLO lo que crea crear_lote_problematico, para poder rehacerlo (--rehacer-lote).
+
+    Va en orden de llaves foraneas y se detiene con error, sin borrar nada a medias, si
+    alguien ya colgo algo del lote (una investigacion, una reclamacion, una evidencia):
+    ese dato no es del seed y no se toca. La bitacora no se modifica: es de solo agregar.
+    """
+    cur.execute("SELECT l.id FROM lotes l JOIN productos p ON p.id = l.producto_id "
+                "WHERE l.numero_lote = %s AND p.sku = 'LAC-001'", (LOTE_PROBLEMATICO,))
+    fila = cur.fetchone()
+    if not fila:
+        return 0
+    lote_id = fila["id"]
+    cur.execute("SELECT d.id FROM devoluciones d JOIN venta_detalle vd ON vd.id = d.venta_detalle_id "
+                "WHERE vd.lote_id = %s", (lote_id,))
+    devs = [f["id"] for f in cur.fetchall()]
+    if devs:
+        cur.execute("DELETE FROM inventario_recuperado WHERE disposicion_id IN "
+                    "(SELECT id FROM disposiciones WHERE devolucion_id = ANY(%s))", (devs,))
+        for tabla in ("disposiciones", "inspecciones_ref", "recepciones", "recolecciones", "costos"):
+            cur.execute(f"DELETE FROM {tabla} WHERE devolucion_id = ANY(%s)", (devs,))  # nombre fijo, no del usuario
+        cur.execute("DELETE FROM devoluciones WHERE id = ANY(%s)", (devs,))
+    cur.execute("DELETE FROM series_producto WHERE lote_id = %s", (lote_id,))
+    cur.execute("DELETE FROM venta_detalle WHERE lote_id = %s", (lote_id,))
+    cur.execute("DELETE FROM ventas WHERE folio_venta LIKE 'VTA-PROB-%' AND NOT EXISTS "
+                "(SELECT 1 FROM venta_detalle vd WHERE vd.venta_id = ventas.id)")
+    cur.execute("DELETE FROM lotes WHERE id = %s", (lote_id,))
+    return len(devs)
 
 
 def rotar_passwords(cur, password):
@@ -542,6 +578,9 @@ def main():
             recientes = crear_ventas_recientes(cur, clientes)
             print(f"Ventas recientes dentro del plazo de devolucion: {recientes} nuevas.")
 
+            if "--rehacer-lote" in sys.argv:
+                retiradas = retirar_lote_problematico(cur)
+                print(f"Lote problematico retirado ({retiradas} devoluciones) para rehacerlo.")
             problematico = crear_lote_problematico(cur, usuarios, clientes)
             if problematico:
                 print(f"Lote problematico {LOTE_PROBLEMATICO}: {problematico} ventas con series y devoluciones.")

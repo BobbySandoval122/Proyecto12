@@ -83,7 +83,7 @@ class IntegracionCausaRaiz(unittest.TestCase):
         cls.supervisor_id, cls.supervisor = _login("Supervisor")
         cls.cliente_id, cls.cliente = _login("Cliente")
         cls.coordinador_id, _ = _login("Coordinador de Logistica")
-        cls.investigaciones, cls.hoy = [], date.today()
+        cls.investigaciones, cls.lotes_extra, cls.hoy = [], [], date.today()
         producto = _sql("SELECT id, proveedor_id FROM productos ORDER BY id LIMIT 1", uno=True)
         tienda = _sql("SELECT id FROM tiendas ORDER BY id LIMIT 1", uno=True)["id"]
         motivo = _sql("SELECT id FROM motivos WHERE activo ORDER BY id LIMIT 1", uno=True)["id"]
@@ -126,6 +126,8 @@ class IntegracionCausaRaiz(unittest.TestCase):
         _sql("DELETE FROM venta_detalle WHERE id = ANY(%s)", (cls.detalles,))
         _sql("DELETE FROM ventas WHERE id = ANY(%s)", (cls.ventas,))
         _sql("DELETE FROM lotes WHERE id=%s", (cls.lote,))
+        for extra in cls.lotes_extra:
+            _sql("DELETE FROM lotes WHERE id=%s", (extra,))
 
     def call(self, metodo, ruta, cuerpo=None, token=None, extra=None):
         return _http(SERVICIO_URL, metodo, BASE + ruta, cuerpo, token or self.analista, extra)
@@ -270,7 +272,14 @@ class IntegracionCausaRaiz(unittest.TestCase):
         self.assertEqual(detalle["cerrada_por"], self.supervisor_id)
 
     def test_el_responsable_solo_ve_y_mueve_sus_acciones(self):
-        codigo, inv = self.call("POST", "/investigaciones", {"dimension": "lote", "referencia_id": self.lote,
+        # Un objeto no admite dos investigaciones abiertas (409): este caso usa su propio lote para no
+        # chocar con la investigacion que abre el flujo de nueve pasos sobre self.lote.
+        producto = _sql("SELECT id, proveedor_id FROM productos ORDER BY id LIMIT 1", uno=True)
+        lote_b = _sql("""INSERT INTO lotes (producto_id, proveedor_id, numero_lote)
+                         VALUES (%s,%s,'L-TEST-CAUSA-B') RETURNING id""",
+                      (producto["id"], producto["proveedor_id"]), uno=True)["id"]
+        self.lotes_extra.append(lote_b)
+        codigo, inv = self.call("POST", "/investigaciones", {"dimension": "lote", "referencia_id": lote_b,
                                 "titulo": "Acciones por responsable", "descripcion": "Prueba de permisos de CAPA"})
         self.assertEqual(codigo, 201)
         iid = inv["id"]

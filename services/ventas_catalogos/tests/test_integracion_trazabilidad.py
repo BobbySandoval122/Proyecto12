@@ -44,14 +44,14 @@ class IntegracionTrazabilidad(unittest.TestCase):
     def test_trazabilidad_del_lote_problematico(self):
         codigo, lote = self.get(f"/lotes/{self.lote_id}")
         self.assertEqual(codigo, 200)
-        self.assertEqual(lote["resumen"]["unidades_vendidas"], 96)
-        self.assertEqual(lote["resumen"]["unidades_devueltas"], 18)
-        self.assertEqual(lote["resumen"]["tasa_pct"], 18.75)
+        self.assertEqual(lote["resumen"]["unidades_vendidas"], 24)
+        self.assertEqual(lote["resumen"]["unidades_devueltas"], 16)
+        self.assertEqual(lote["resumen"]["tasa_pct"], 66.67)
         self.assertGreater(lote["resumen"]["veces_promedio"], 1)
         tiendas = {t["tienda"]: t for t in lote["tiendas"]}
         self.assertEqual(tiendas["Tienda Centro"]["unidades_devueltas"], 12)
-        self.assertEqual(lote["series"]["total"], 96)
-        self.assertEqual(len(lote["devoluciones"]), 9)
+        self.assertEqual(lote["series"]["total"], 24)
+        self.assertEqual(len(lote["devoluciones"]), 4)
         # Las cerradas traen el recorrido completo hasta la disposicion.
         cerradas = [d for d in lote["devoluciones"] if d["estado"] == "cerrada"]
         self.assertEqual({d["recorrido"]["destino_disposicion"] for d in cerradas}, {"desecho"})
@@ -69,7 +69,7 @@ class IntegracionTrazabilidad(unittest.TestCase):
         # aleatorios del seed pueden dar tasas altas a lotes con pocas ventas.
         _, lotes = self.get("/tasas?por=lote")
         fila = next(f for f in lotes["datos"] if "L-2026-PROB-01" in f["etiqueta"])
-        self.assertEqual(fila["tasa_pct"], 18.75)
+        self.assertEqual(fila["tasa_pct"], 66.67)
         self.assertGreater(fila["veces_promedio"], 1)
         _, tiendas = self.get("/tasas?por=tienda")
         centro = next(f for f in tiendas["datos"] if f["etiqueta"] == "Tienda Centro")
