@@ -22,7 +22,7 @@ nuevos.
 | 8005 | reembolsos-costos | 5 reembolsos-costos (+ gestion economica completa) | existente |
 | 8006 | ventas-catalogos | 6 ventas-catalogos + 9 lotes-trazabilidad | existente |
 | 8007 | evidencias | 7 evidencias (+ videos, firmas, integridad) | existente |
-| 8008 | analisis-auditoria | 8 analisis-auditoria: se propone dejar aqui solo **auditoria** y mover el analisis a 8018 | existente |
+| 8008 | analisis-auditoria | 8 analisis-auditoria: queda solo **auditoria**; el analisis esta aislado y obsoleto (sucesores: 8010 y 8018) y se retira por etapas, ver `docs/MIGRACION_ANALISIS_8008.md` | **separado** (analisis pendiente de retiro) |
 | 8010 | clasificacion-motivos | 10 clasificacion de motivos | **implementado** |
 | 8011 | causa-raiz | 11 causa raiz + 12 acciones correctivas (CAPA) | **implementado** |
 | 8013 | proveedores | 13 proveedores | **implementado** |
