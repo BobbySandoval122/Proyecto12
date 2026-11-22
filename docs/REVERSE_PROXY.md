@@ -19,7 +19,7 @@ límites de petición y terminación TLS.
 | Contrato de un servicio | `http(s)://HOST/servicios/SERVICIO/contratos/NOMBRE.xsd` |
 
 Los prefijos disponibles bajo `/servicios/` son `auth`, `devoluciones`,
-`logistica`, `inspecciones`, `reembolsos-costos`, `ventas-catalogos`,
+`logistica`, `inspecciones`, `disposicion-inventario`, `reembolsos-costos`, `ventas-catalogos`,
 `evidencias`, `auditoria`, `reportes-analitica`, `causa-raiz`,
 `sincronizacion`, `proveedores`, `integraciones-monitoreo` y
 `clasificacion-motivos`.
@@ -70,6 +70,14 @@ HSTS. No se almacenan certificados ni llaves en Git.
   timeout de 120 segundos.
 - No se agregan cabeceras CORS: web, Android y escritorio usan el mismo origen o
   son clientes nativos.
+
+## Recreacion de contenedores
+
+Nginx usa el DNS interno de Docker (`127.0.0.11`) y upstreams con resolucion
+dinamica. Si Compose recrea un microservicio y cambia su IP, el proxy actualiza
+el destino sin requerir un reinicio manual. Tanto Android como el cliente de
+escritorio configuran solo el origen del proxy, sin puertos individuales:
+`http://10.0.2.2` para el emulador Android y `http://127.0.0.1` en Windows local.
 
 ## Reversión y diagnóstico
 
