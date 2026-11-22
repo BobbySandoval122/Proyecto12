@@ -14,8 +14,8 @@ golpe habria roto a todos, asi que se hace en etapas:
 | Etapa | Que pasa | Estado |
 |---|---|---|
 | 1. Aislar | El codigo se divide en `auditoria.py` y `analisis.py`; el analisis se marca obsoleto; la auditoria gana filtros y se protege en la base | **Hecha en este cambio** |
-| 2. Migrar clientes | La web, la suite E2E y Postman dejan de usar las rutas `/api/v1/analisis/*` | Pendiente (lista abajo) |
-| 3. Cortar | `ANALISIS_HABILITADO=false`: las rutas responden 410 y el servicio queda solo con auditoria | Pendiente; se revierte cambiando una variable |
+| 2. Migrar clientes | La web, la suite E2E y Postman dejan de usar las rutas `/api/v1/analisis/*` | Web y E2E **hechas**; Postman pendiente (ver abajo) |
+| 3. Cortar | `ANALISIS_HABILITADO=false`: las rutas responden 410 y el servicio queda solo con auditoria | **Hecha** en `docker-compose.yml` (2026-11-22); se revierte cambiando una variable |
 | 4. Retirar | Se borra `analisis.py` y deja de usarse la coleccion Mongo `resultados_analisis` | Pendiente |
 
 ## Que hace la etapa 1
@@ -67,7 +67,7 @@ ocultado diferencias reales y hecho que la auditoria dependiera del analisis.
 |---|---|---|
 | **Web** (modo distribuido) | `apps/web/app/blueprints/panel.py` (vista `causas` y ruta `sincronizar_causas`) y `panel/causas.html` | **Hecho.** Se quito el bloque de snapshots de MongoDB, el boton "Sincronizar PostgreSQL → MongoDB" y la ruta `POST /panel/causas/sincronizar`. El panel ya calculaba su Pareto y sus tasas desde PostgreSQL, asi que no pierde informacion. `config.py` y `microservicios.py` conservan la URL de 8008 porque la auditoria sigue ahi y se monitorea |
 | **Suite E2E** | `tests/e2e/cliente.py`, `test_01_proceso_completo.py` (pasos 03 y 10) y `test_02_seguridad_y_errores.py` | **Hecho.** El paso 03 usa `POST /api/v1/motivos/sugerencias` (8010) y comprueba que sugiere `empaque_roto` con codigo, categoria y version. El paso 10 se reescribio, no se tradujo: el Pareto de 8018 cuenta la devolucion del paso 4 sin sincronizar y suma lo mismo que la base; ya no se comprueba cache de Redis ni snapshots de MongoDB, que no existen en el sucesor. La traza por correlation id y la bitacora se leen de `/api/v1/auditoria`. `test_02` cubre ahora los endpoints de auditoria, motivos y reportes |
-| **Postman** | `docs/postman/especificaciones.py` (`analisis_auditoria`), `generar_colecciones.py`, `volcar_ejecuciones.py` y las evidencias ejecutadas | Dividir en tres colecciones (auditoria, motivos, reportes). Las evidencias actuales se generaron en la VM y hay que volver a ejecutarlas; no se editaron a mano |
+| **Postman** | `docs/postman/especificaciones.py` (`analisis_auditoria`), `generar_colecciones.py`, `volcar_ejecuciones.py` y las evidencias ejecutadas | **Pendiente, a proposito.** Tras el corte la coleccion de 8008 prueba rutas que ya responden 410 (por eso sus evidencias de Newman quedan desactualizadas). Regenerarla reescribe `docs/EVIDENCIAS.md` y su checklist y obliga a volver a correr Newman en la VM; las evidencias de los servicios del tercer parcial se hicieron con `curl` (`docs/evidencias/ejecuciones/auditoria.md`, `causa_raiz.md`, etc.) |
 | **Monitoreo** | `integraciones-monitoreo` y la lista de servicios de la web | Nada: 8008 sigue existiendo |
 
 ## Etapa 3: el corte

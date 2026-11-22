@@ -201,9 +201,9 @@ services:
     env_file: ${APP_ENV_FILE:-.env}
     environment:
       # El analisis se separo de la auditoria (docs/MIGRACION_ANALISIS_8008.md). En "false"
-      # sus rutas responden 410 y el servicio queda solo con auditoria. No cambiarlo hasta
-      # migrar la web, la suite E2E y Postman.
-      ANALISIS_HABILITADO: "true"
+      # sus rutas responden 410 servicio_movido y el servicio queda solo con auditoria. La web y
+      # la suite E2E ya no lo usan. Para revertir el corte: "true" y `docker compose up -d analisis-auditoria`.
+      ANALISIS_HABILITADO: "false"
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
