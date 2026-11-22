@@ -297,3 +297,23 @@ def test_la_cabecera_cita_el_comando_que_se_escribe_no_el_nombre_del_servicio(co
     corrida.caso("ok", "GET", "/ok", objetivo="o")
     md = corrida.markdown()
     assert "scripts/evidencias/ejecutar.py proveedores`" in md and "ejecutar.py servicio-x" not in md
+
+
+def test_el_marcador_de_contrasena_viaja_real_pero_se_muestra_como_marcador(corrida):
+    """Reconfirmar la contrasena (cierre de investigaciones): el cuerpo lleva $PASSWORD_DEMO."""
+    corrida.caso("reconfirma", "POST", "/eco", objetivo="o", rol="admin",
+                 json_cuerpo={"operacion": "cerrar_investigacion", "password": "$PASSWORD_DEMO"})
+    enviado = json.loads(Falso.visto[-1][3])
+    assert enviado["password"] == PASSWORD                      # el servicio recibio la contrasena real
+    md = corrida.markdown()
+    assert PASSWORD not in md
+    assert '"password":"$PASSWORD_DEMO"' in md.split("Respuesta")[0]   # el lector ve el marcador en el comando
+
+
+def test_un_secreto_generado_en_la_corrida_se_oculta_en_el_comando_y_en_la_respuesta(corrida):
+    permiso = "permiso-opaco-que-no-parece-jwt"
+    corrida.esconder(permiso)
+    corrida.caso("usa permiso", "POST", "/eco", objetivo="o", rol="admin", json_cuerpo={"a": 1},
+                 cabeceras_extra={"X-Autorizacion-Operacion": permiso})
+    md = corrida.markdown()
+    assert permiso not in md and 'X-Autorizacion-Operacion: ***oculto***' in md

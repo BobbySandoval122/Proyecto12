@@ -28,6 +28,7 @@ CABECERAS_VISIBLES = ("content-type", "content-length", "x-correlation-id", "dep
 MAX_LINEAS_CUERPO = 70
 TIPOS_BINARIOS = ("application/pdf", "application/vnd.openxmlformats", "application/octet-stream",
                   "image/")
+MARCADOR_PASSWORD = "$PASSWORD_DEMO"
 JWT = re.compile(r"eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]{2,}")
 
 # Cuentas de demostracion del seed (scripts/seed_demo.py); los correos son publicos.
@@ -140,6 +141,18 @@ class Corrida:
             raise RuntimeError(f"curl fallo ({r.returncode}): {r.stderr.decode()[:200]}")
         return analizar_respuesta(r.stdout, ms)
 
+    def _con_contrasena(self, cuerpo):
+        """Un cuerpo puede llevar el marcador $PASSWORD_DEMO (ej. reconfirmar contrasena): se envia la real, se muestra el marcador."""
+        if MARCADOR_PASSWORD not in cuerpo:
+            return cuerpo
+        real = self.password()
+        self._ocultos.add(real)
+        return cuerpo.replace(MARCADOR_PASSWORD, json.dumps(real)[1:-1])
+
+    def esconder(self, valor):
+        """Registra un secreto generado en la corrida (ej. permiso de operacion) para que nunca salga en el archivo."""
+        self._ocultos.add(valor)
+
     def ocultar(self, texto):
         for secreto in self._ocultos:
             texto = texto.replace(secreto, "***oculto***")
@@ -179,7 +192,7 @@ class Corrida:
         if json_cuerpo is not None:
             cuerpo_mostrado = json.dumps(json_cuerpo, ensure_ascii=False, separators=(",", ":"))
             cabeceras["Content-Type"] = mostradas["Content-Type"] = "application/json"
-            cuerpo = cuerpo_mostrado.encode()
+            cuerpo = self._con_contrasena(cuerpo_mostrado).encode()
         elif xml is not None:
             cuerpo_mostrado = xml
             cabeceras["Content-Type"] = mostradas["Content-Type"] = "application/xml"
@@ -233,7 +246,7 @@ class Corrida:
             partes.append(f'-H "{nombre}: {valor}"')
         if c["cuerpo"] is not None:
             partes.append(f"-d {comillas(c['cuerpo'])}")
-        return " \\\n  ".join(partes)
+        return self.ocultar(" \\\n  ".join(partes))
 
     def _cuerpo_legible(self, r):
         if r.es_binario:
