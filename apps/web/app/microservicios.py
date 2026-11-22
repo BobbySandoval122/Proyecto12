@@ -20,6 +20,7 @@ SERVICIOS = (
     ("proveedores", "PROVEEDORES_SERVICE_URL", "http://proveedores:8000"),
     ("evidencias", "EVIDENCIAS_SERVICE_URL", "http://evidencias:8000"),
     ("analisis-auditoria", "ANALISIS_SERVICE_URL", "http://analisis-auditoria:8000"),
+    ("clasificacion-motivos", "CLASIFICACION_SERVICE_URL", "http://clasificacion-motivos:8000"),
 )
 
 

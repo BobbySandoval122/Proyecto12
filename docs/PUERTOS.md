@@ -23,7 +23,7 @@ nuevos.
 | 8006 | ventas-catalogos | 6 ventas-catalogos + 9 lotes-trazabilidad | existente |
 | 8007 | evidencias | 7 evidencias (+ videos, firmas, integridad) | existente |
 | 8008 | analisis-auditoria | 8 analisis-auditoria: se propone dejar aqui solo **auditoria** y mover el analisis a 8018 | existente |
-| 8010 | clasificacion-motivos | 10 clasificacion de motivos | nuevo |
+| 8010 | clasificacion-motivos | 10 clasificacion de motivos | **implementado** |
 | 8011 | causa-raiz | 11 causa raiz + 12 acciones correctivas (CAPA) | nuevo |
 | 8013 | proveedores | 13 proveedores | **implementado** |
 | 8014 | disposicion-inventario | 14 disposicion + 15 inventario inverso | nuevo |

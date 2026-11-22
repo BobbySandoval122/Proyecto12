@@ -33,7 +33,8 @@ SERVICIOS_DEFECTO = (
     "devoluciones=http://devoluciones:8000,evidencias=http://evidencias:8000,"
     "logistica=http://logistica:8000,inspecciones=http://inspecciones:8000,"
     "reembolsos-costos=http://reembolsos-costos:8000,analisis-auditoria=http://analisis-auditoria:8000,"
-    "sincronizacion=http://sincronizacion:8000"
+    "sincronizacion=http://sincronizacion:8000,"
+    "clasificacion-motivos=http://clasificacion-motivos:8000"
 )
 DIAS_HISTORIAL = 7
 _indices_listos = False
