@@ -13,10 +13,10 @@ golpe habria roto a todos, asi que se hace en etapas:
 
 | Etapa | Que pasa | Estado |
 |---|---|---|
-| 1. Aislar | El codigo se divide en `auditoria.py` y `analisis.py`; el analisis se marca obsoleto; la auditoria gana filtros y se protege en la base | **Hecha en este cambio** |
+| 1. Aislar | El codigo se divide en `auditoria.py` y `analisis.py`; el analisis se marca obsoleto; la auditoria gana filtros y se protege en la base | **Hecha** |
 | 2. Migrar clientes | La web, la suite E2E y Postman dejan de usar las rutas `/api/v1/analisis/*` | Web y E2E **hechas**; Postman pendiente (ver abajo) |
-| 3. Cortar | `ANALISIS_HABILITADO=false`: las rutas responden 410 y el servicio queda solo con auditoria | **Hecha** en `docker-compose.yml` (2026-11-22); se revierte cambiando una variable |
-| 4. Retirar | Se borra `analisis.py` y deja de usarse la coleccion Mongo `resultados_analisis` | Pendiente |
+| 3. Cortar | `ANALISIS_HABILITADO=false`: las rutas responden 410 y el servicio queda solo con auditoria | **Hecha** el 2026-11-22 (el interruptor ya no existe: lo sustituye la etapa 4) |
+| 4. Retirar | Se borra `analisis.py` y deja de usarse la coleccion Mongo `resultados_analisis` | **Hecha** el 2026-11-22 (ver "Etapa 4") |
 
 ## Que hace la etapa 1
 
@@ -78,7 +78,29 @@ ocultado diferencias reales y hecho que la auditoria dependiera del analisis.
    - `GET /health` muestra `"analisis": "retirado"`.
    - `GET /api/v1/analisis/pareto` responde **410** `servicio_movido`.
    - `GET /api/v1/auditoria`, `/auditoria/eventos` y `/auditoria/estado` siguen en 200.
-4. Si algo falla, volver a `"true"` y reiniciar: nada se borro.
+4. Si algo fallaba, se volvia a `"true"` y se reiniciaba: nada se habia borrado. Tras la etapa 4 esto
+   ya no es posible sin recuperar el codigo del historial de git.
+
+## Etapa 4: retirar
+
+Hecha el 2026-11-22, despues de verificar la web (PR #58), la suite E2E (113 pruebas) y el corte en la VM.
+
+- **Se borro** `services/analisis_auditoria/analisis.py` (sincronizar, Pareto con cache, clasificar motivo,
+  alertas de fraude, resumen y el alias de eventos), su contrato `clasificacion.xsd` y `tests/test_pareto.py`.
+  Todo sigue en el historial de git.
+- **Se agrego** `retirado.py`, un stub sin logica: cualquier metodo y ruta bajo `/api/v1/analisis` responde
+  **410 `servicio_movido`**, aun sin token, con los sucesores y `Deprecation: true`. Se prefirio a dejar un 404
+  mudo para que un cliente rezagado sepa a donde ir. `/health` sigue diciendo `"analisis": "retirado"`.
+- **Ya no existe** la variable `ANALISIS_HABILITADO` (compose, `.env.example`, pruebas). Volver atras
+  exige `git revert` del cambio.
+- **MongoDB**: `db/mongo/init.js` ya no crea `resultados_analisis`. **No se borraron los datos** de esa coleccion
+  en la VM: un volumen existente la conserva sin que nadie la lea. Si se quiere liberar el espacio, es un
+  `db.resultados_analisis.drop()` manual y no se puede deshacer.
+- **Pruebas**: `test_separacion.py` comprueba que el codigo del analisis ya no existe, que el stub es la
+  unica ruta de `/analisis` y que responde 410 con cualquier metodo; `test_integracion.py` conserva
+  `IntegracionCorte` (410 con sucesor y auditoria en pie).
+- **No se tocaron** documentos historicos del segundo parcial (DOCUMENTO_TECNICO, diagramas, evidencias de
+  Newman, `EVIDENCIAS.md`, `scripts/evidencias_vm.sh`) que describen cuando el analisis existia, ni Postman.
 
 ## Para la demo
 

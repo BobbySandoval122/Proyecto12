@@ -81,9 +81,9 @@ y desactive el trigger a proposito.
 
 ### Reglas de diseno de esta ampliacion
 
-- **La auditoria no depende del analisis.** `auditoria.py` no importa `analisis.py` y
-  solo tiene rutas GET; dos pruebas lo hacen cumplir. El analisis obsoleto se retira
-  por etapas (`docs/MIGRACION_ANALISIS_8008.md`).
+- **La auditoria no depende del analisis.** `auditoria.py` no importa nada del analisis y
+  solo tiene rutas GET; pruebas lo hacen cumplir. El analisis se retiro por completo
+  (`docs/MIGRACION_ANALISIS_8008.md`): `retirado.py` solo responde 410 con los sucesores.
 - **Una tasa solo se compara con ventas que ya pudieron devolverse.** Las ventas de los
   ultimos dias aun pueden recibir devoluciones (plazo de `politicas_devolucion`, RN-16);
   contarlas haria parecer que la tasa baja. Lo aplican la medicion de eficacia de

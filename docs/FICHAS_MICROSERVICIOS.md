@@ -94,9 +94,9 @@ en `/contratos/<archivo>.xsd`, Dockerfile propio y `/health`.
 |---|---|
 | Proposito | **Auditoria**: consultar la bitacora y la traza de eventos, de solo lectura. El analisis que antes vivia aqui se separo y esta obsoleto. |
 | Justificacion | RF-30, RN-12, RNF-23. Correccion del profe: separar la auditoria del analisis para que cambiar el analisis nunca toque la auditoria. Etapas y pendientes: `docs/MIGRACION_ANALISIS_8008.md`. |
-| Persistencia | Lee la bitacora de PostgreSQL (que desde la migracion 045 solo admite agregar) y los eventos de MongoDB, sin su campo `datos`. El analisis obsoleto aun usa Mongo `resultados_analisis` y el cache de Redis. |
-| Endpoints | Auditoria: `GET /api/v1/auditoria` (filtros accion, entidad, entidad_id, usuario_id, correlation_id, desde, hasta), `GET /api/v1/auditoria/eventos` y `GET /api/v1/auditoria/estado`. **Obsoletos** (`Deprecation: true`): `/api/v1/analisis/{sincronizar,pareto,resumen,clasificar-motivo,alertas-fraude,eventos}`. |
-| Reglas | `auditoria.py` no importa el analisis y solo tiene rutas GET (lo comprueban pruebas); la base bloquea UPDATE, DELETE y TRUNCATE de la bitacora; con `ANALISIS_HABILITADO=false` el analisis responde 410 y queda solo la auditoria. |
+| Persistencia | Lee la bitacora de PostgreSQL (que desde la migracion 045 solo admite agregar) y los eventos de MongoDB, sin su campo `datos`. El analisis se retiro: ya no usa Mongo `resultados_analisis` ni cache de Redis. |
+| Endpoints | Auditoria: `GET /api/v1/auditoria` (filtros accion, entidad, entidad_id, usuario_id, correlation_id, desde, hasta), `GET /api/v1/auditoria/eventos` y `GET /api/v1/auditoria/estado`. **Retirado**: cualquier ruta bajo `/api/v1/analisis` responde 410 `servicio_movido` con los sucesores (`Deprecation: true`). |
+| Reglas | `auditoria.py` no importa nada del analisis y solo tiene rutas GET (lo comprueban pruebas); la base bloquea UPDATE, DELETE y TRUNCATE de la bitacora; el codigo del analisis se borro y `retirado.py` solo responde 410 con los sucesores. |
 | Roles | Auditoria: Administrador y Analista. El analisis obsoleto conserva sus roles de siempre. |
 | Despliegue/pruebas | Dockerfile y Compose propios; 44 pruebas que corren sin base (separacion, filtros, solo lectura, interruptor) y `test_integracion.py` en la VM, que prueba el trigger de verdad. Sucesores: `clasificacion-motivos` (8010) y `reportes-analitica` (8018). |
 

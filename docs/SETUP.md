@@ -73,10 +73,11 @@ docker compose exec -T app python scripts/seed_demo.py
   version anterior del lote: `docker compose exec -T app python scripts/seed_demo.py --rehacer-lote`.
   Borra solo lo que creo el seed, se detiene con error si alguien colgo algo del lote
   (una investigacion, una reclamacion) y no toca la bitacora.
-- **`ANALISIS_HABILITADO`** (servicio `analisis-auditoria` en `docker-compose.yml`): en
-  `"true"` las rutas de analisis obsoletas siguen respondiendo; en `"false"` responden 410 y
-  el servicio queda solo con auditoria. No lo cambies hasta migrar la web, la suite E2E y
-  Postman (`docs/MIGRACION_ANALISIS_8008.md`).
+- **Analisis retirado de `analisis-auditoria`** (`docs/MIGRACION_ANALISIS_8008.md`): ya no hay
+  variable ni interruptor. Las rutas de `/api/v1/analisis/*` responden siempre 410
+  `servicio_movido` con sus sucesores (clasificacion-motivos 8010 y reportes-analitica 8018) y
+  el servicio queda solo con auditoria. La coleccion `resultados_analisis` de MongoDB ya no se
+  crea en un volumen nuevo; en uno existente queda sin uso.
 
 Para validar Compose sin crear un archivo con secretos puede usarse
 `APP_ENV_FILE=.env.example docker compose --env-file .env.example config`.

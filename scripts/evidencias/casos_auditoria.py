@@ -1,7 +1,7 @@
 """Casos de evidencia de auditoria (8008): RF-30, RN-12, RN-13, RNF-16, RNF-23, RF-25.
 
 El servicio de auditoria es de solo lectura: no hay datos que limpiar. Tambien se documentan las rutas
-de /api/v1/analisis tras el corte (ANALISIS_HABILITADO=false, docs/MIGRACION_ANALISIS_8008.md): responden 410
+de /api/v1/analisis tras retirar el analisis (docs/MIGRACION_ANALISIS_8008.md): responden 410
 servicio_movido, aun sin token, y nombran a su sucesor (clasificacion-motivos 8010, reportes-analitica 8018 y la
 propia auditoria). Con el analisis habilitado estas mismas rutas responden 200 con las cabeceras Deprecation y Link.
 """

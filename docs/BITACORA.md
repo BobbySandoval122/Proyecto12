@@ -976,3 +976,21 @@ global. Es `combinacion` si ese extremo supera la tasa de los dos factores por s
 de dos factores y no corrige por comparaciones multiples: con muchas combinaciones alguna
 saldra distinguible por azar (5 % de las que no lo son), por eso es una senal para revisar y
 no una conclusion.
+
+## 2026-11-22 - Etapa 4: se retira el analisis del 8008 (Persona 4)
+
+**Decision.** Con la web, la suite E2E y el corte verificados, se borra `analisis.py` (y su XSD y su
+prueba de Pareto). En su lugar queda `retirado.py`: un stub sin logica que responde 410 `servicio_movido`
+con los sucesores en cualquier metodo y ruta bajo `/api/v1/analisis`.
+
+**Por que un stub y no un 404.** Un cliente rezagado (un Postman viejo, el script de alguien) que recibe un 404
+no sabe que paso; con 410 y los sucesores en el cuerpo sabe a donde ir. El stub no importa la auditoria ni
+calcula nada, asi que mantenerlo no cuesta.
+
+**Por que no se borra la coleccion de MongoDB.** `resultados_analisis` en la VM ya no la lee nadie, pero borrar
+datos no se puede deshacer y no estorba. `init.js` ya no la crea en un volumen nuevo. Si se quiere liberar el
+espacio, se hace a mano y con la decision del equipo.
+
+**Costo.** El interruptor `ANALISIS_HABILITADO` desaparece: revertir el retiro exige `git revert`. El analisis
+sigue en el historial de git por si alguien lo necesita.
+
