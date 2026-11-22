@@ -370,7 +370,7 @@ class Ventana(QMainWindow):
             self.agregar(TablaServicio("Reembolsos", "Consulta de resoluciones económicas; la base conserva unicidad por devolución.", lambda: self.cliente.solicitar("reembolsos", "GET", "/api/v1/reembolsos-costos/reembolsos"), ("id", "folio_devolucion", "monto", "metodo", "estado", "encargado")), "Historial")
         if rol in (ADMIN, ANALISTA):
             self.agregar(TablaServicio("Auditoría de operaciones", "Registro de solo lectura. La aplicación no puede alterar la bitácora.", lambda: self.cliente.solicitar("analisis", "GET", "/api/v1/auditoria"), ("fecha", "usuario", "accion", "entidad", "entidad_id")), "Auditoría")
-            self.agregar(TablaServicio("Investigación de causas", "Eventos y señales para analizar patrones sistémicos sin modificar la auditoría.", lambda: self.cliente.solicitar("analisis", "GET", "/api/v1/analisis/eventos"), ("fecha", "servicio", "tipo", "devolucion_id")), "Investigaciones")
+            self.agregar(TablaServicio("Investigaciones de causa raíz", "Expedientes vigentes, hipótesis, evidencias y acciones correctivas consultados desde el servicio especializado de causa raíz.", lambda: self.cliente.solicitar("causa_raiz", "GET", "/api/v1/causa-raiz/investigaciones"), ("folio", "titulo", "dimension", "etiqueta", "estado", "analista", "hipotesis", "evidencias", "acciones", "fecha_creacion")), "Investigaciones")
         if self.tabs.count() == 0:
             self.agregar(Pagina("Sin operaciones de escritorio", "Tu rol no tiene procesos asignados en el centro de devoluciones."), "Inicio")
 

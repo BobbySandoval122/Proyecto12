@@ -22,6 +22,7 @@ PASSWORD = os.environ.get("PASSWORD_DEMO", "DemoRoberto2026!")
     ("roberto.centro@demo.mx", "disposicion", "/api/v1/disposicion-inventario/inventario"),
     ("carla.reembolsos@demo.mx", "reembolsos", "/api/v1/reembolsos-costos/reembolsos"),
     ("pablo.admin@demo.mx", "analisis", "/api/v1/auditoria"),
+    ("pablo.admin@demo.mx", "causa_raiz", "/api/v1/causa-raiz/investigaciones"),
 ])
 def test_cada_perfil_consulta_su_microservicio(correo, servicio, ruta):
     cliente = ClienteXml()

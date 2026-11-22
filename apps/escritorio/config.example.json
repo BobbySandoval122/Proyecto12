@@ -1,8 +1,9 @@
 {
-  "auth": "http://127.0.0.1:8001",
-  "inspecciones": "http://127.0.0.1:8004",
-  "reembolsos": "http://127.0.0.1:8005",
-  "evidencias": "http://127.0.0.1:8007",
-  "disposicion": "http://127.0.0.1:8014",
-  "analisis": "http://127.0.0.1:8008"
+  "auth": "http://127.0.0.1",
+  "inspecciones": "http://127.0.0.1",
+  "reembolsos": "http://127.0.0.1",
+  "evidencias": "http://127.0.0.1",
+  "disposicion": "http://127.0.0.1",
+  "analisis": "http://127.0.0.1",
+  "causa_raiz": "http://127.0.0.1"
 }

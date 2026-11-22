@@ -7,7 +7,7 @@ import urllib.request
 
 SERVICIOS = (
     "auth", "devoluciones", "logistica", "inspecciones",
-    "reembolsos-costos", "ventas-catalogos", "evidencias", "auditoria",
+    "disposicion-inventario", "reembolsos-costos", "ventas-catalogos", "evidencias", "auditoria",
     "reportes-analitica", "causa-raiz", "sincronizacion", "proveedores",
     "integraciones-monitoreo", "clasificacion-motivos",
 )

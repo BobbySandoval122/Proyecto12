@@ -8,21 +8,24 @@ services:
     container_name: orvia_proxy
     restart: unless-stopped
     depends_on:
-      app: {condition: service_started}
-      auth: {condition: service_started}
-      devoluciones: {condition: service_started}
-      logistica: {condition: service_started}
-      inspecciones: {condition: service_started}
-      reembolsos-costos: {condition: service_started}
-      ventas-catalogos: {condition: service_started}
-      evidencias: {condition: service_started}
-      analisis-auditoria: {condition: service_started}
-      reportes-analitica: {condition: service_started}
-      causa-raiz: {condition: service_started}
-      sincronizacion: {condition: service_started}
-      proveedores: {condition: service_started}
-      integraciones-monitoreo: {condition: service_started}
-      clasificacion-motivos: {condition: service_started}
+      # Cuando Compose recrea un backend puede cambiar su IP interna. Reiniciar
+      # Nginx fuerza una resolucion DNS nueva y evita enrutar al contenedor viejo.
+      app: {condition: service_started, restart: true}
+      auth: {condition: service_started, restart: true}
+      devoluciones: {condition: service_started, restart: true}
+      logistica: {condition: service_started, restart: true}
+      inspecciones: {condition: service_started, restart: true}
+      disposicion-inventario: {condition: service_started, restart: true}
+      reembolsos-costos: {condition: service_started, restart: true}
+      ventas-catalogos: {condition: service_started, restart: true}
+      evidencias: {condition: service_started, restart: true}
+      analisis-auditoria: {condition: service_started, restart: true}
+      reportes-analitica: {condition: service_started, restart: true}
+      causa-raiz: {condition: service_started, restart: true}
+      sincronizacion: {condition: service_started, restart: true}
+      proveedores: {condition: service_started, restart: true}
+      integraciones-monitoreo: {condition: service_started, restart: true}
+      clasificacion-motivos: {condition: service_started, restart: true}
     ports:
       - "0.0.0.0:${PROXY_HTTP_PORT:-80}:8080"
     volumes:
@@ -32,7 +35,7 @@ services:
       - ./infra/nginx/snippets/proxy-common.conf:/etc/nginx/snippets/proxy-common.conf:ro,z
     networks: [default, public]
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/proxy-health"]
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/proxy-health"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -184,7 +187,7 @@ services:
     depends_on:
       postgres: {condition: service_healthy}
       redis: {condition: service_healthy}
-    ports: ["0.0.0.0:8014:8000"]
+    expose: ["8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
       interval: 15s
