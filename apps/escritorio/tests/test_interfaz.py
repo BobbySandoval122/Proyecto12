@@ -6,7 +6,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from cliente_xml import ClienteXml
+from cliente_xml import ClienteXml, crear_xml, validar_xsd
 from main import (ADMIN, ANALISTA, CENTRO, INSPECTOR, REEMBOLSOS, SUPERVISOR,
                   Inspeccion, Ventana, crear_aplicacion, filas_respuesta, valor_celda,
                   valor_tabla)
@@ -97,12 +97,15 @@ def test_doble_click_no_envia_dos_inspecciones():
 
         def solicitar(self, *args, **kwargs):
             self.llamadas += 1
+            validar_xsd(crear_xml(kwargs["raiz"], kwargs["datos"]), kwargs["xsd"])
             time.sleep(0.05)
             return {"id": 1}
 
     app = crear_aplicacion([])
     cliente = ClienteContador()
     formulario = Inspeccion(cliente)
+    formulario.temperatura.setText("4.5")
+    formulario.minutos.setText("10")
     formulario.registrar()
     formulario.registrar()  # simula el segundo evento ya encolado por doble clic
     formulario.trabajo.wait(1000)

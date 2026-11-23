@@ -246,13 +246,17 @@ class Inspeccion(FormularioOperacion):
             try:
                 if int(minutos) < 0: raise ValueError
             except ValueError: return self.error(ValueError("Los minutos deben ser un entero no negativo."))
+        # El contrato usa xs:sequence: el orden de insercion debe coincidir
+        # exactamente con inspeccion.xsd, incluidos los campos opcionales.
         datos = {"devolucion_id": self.devolucion.value(), "estado_empaque": empaque,
             "danos": self.danos.isChecked(), "empaque_alterado": self.alterado.isChecked(),
             "faltantes": self.faltantes.isChecked(), "caducidad_vencida": self.caducidad.isChecked(),
-            "cadena_frio_rota": self.cadena.isChecked(), "condicion_transporte": self.transporte.currentText(),
-            "evidencia_suficiente": self.evidencia.isChecked(), "observaciones": self.observaciones.toPlainText().strip()}
-        if temperatura: datos["temperatura_recepcion"] = temperatura
+            "cadena_frio_rota": self.cadena.isChecked()}
         if minutos: datos["minutos_fuera_refrigeracion"] = minutos
+        if temperatura: datos["temperatura_recepcion"] = temperatura
+        datos.update({"condicion_transporte": self.transporte.currentText(),
+            "evidencia_suficiente": self.evidencia.isChecked(),
+            "observaciones": self.observaciones.toPlainText().strip()})
         xsd = RAIZ / "services/inspecciones/contratos/inspeccion.xsd"
         self.ejecutar(lambda: self.cliente.solicitar("inspecciones", "POST", "/api/v1/inspecciones", raiz="inspeccion", xsd=xsd, datos=datos), self.enviar, "Inspección registrada y dictamen técnico generado.")
 
