@@ -23,6 +23,20 @@ class PruebaReembolsos(unittest.TestCase):
         sid=uuid.uuid4().hex; self.r.datos[seguridad.clave_sesion(sid)]="1"; ahora=int(time.time())
         return jwt.encode({"iss":seguridad.EMISOR,"sub":"7","rol":rol,"nombre":"Prueba","sid":sid,"jti":uuid.uuid4().hex,"typ":"access","iat":ahora,"exp":ahora+600},os.environ["JWT_SECRET"],algorithm="HS256")
     def test_sin_token(self): self.assertEqual(self.cliente.get("/api/v1/reembolsos-costos/reembolsos").status_code,401)
+    def test_pendientes_excluye_reembolsados_y_solo_muestra_resueltas(self):
+        capturada={}
+        original=servicio.consultar
+        def consultar(sql,params=None,uno=False):
+            capturada["sql"]=sql
+            return [{"devolucion_id":25,"estado":"resuelta"}]
+        servicio.consultar=consultar
+        try:
+            r=self.cliente.get("/api/v1/reembolsos-costos/reembolsos/pendientes",headers={"Authorization":"Bearer "+self.token(seguridad.ENCARGADO_REEMBOLSOS)})
+        finally: servicio.consultar=original
+        self.assertEqual(r.status_code,200)
+        self.assertEqual(r.get_json()["datos"][0]["devolucion_id"],25)
+        self.assertIn("d.estado='resuelta'",capturada["sql"])
+        self.assertIn("NOT EXISTS",capturada["sql"])
     def test_analista_no_resuelve_reembolso(self):
         r=self.cliente.post("/api/v1/reembolsos-costos/reembolsos",headers={"Authorization":"Bearer "+self.token(seguridad.ANALISTA)},json={})
         self.assertEqual(r.status_code,403)

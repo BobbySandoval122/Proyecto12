@@ -20,7 +20,7 @@ PASSWORD = os.environ.get("PASSWORD_DEMO", "DemoRoberto2026!")
     ("valentina.inspector@demo.mx", "inspecciones", "/api/v1/inspecciones/pendientes"),
     ("josue.analista@demo.mx", "disposicion", "/api/v1/disposicion-inventario/pendientes"),
     ("roberto.centro@demo.mx", "disposicion", "/api/v1/disposicion-inventario/inventario"),
-    ("carla.reembolsos@demo.mx", "reembolsos", "/api/v1/reembolsos-costos/reembolsos"),
+    ("carla.reembolsos@demo.mx", "reembolsos", "/api/v1/reembolsos-costos/reembolsos/pendientes"),
     ("pablo.admin@demo.mx", "analisis", "/api/v1/auditoria"),
     ("pablo.admin@demo.mx", "causa_raiz", "/api/v1/causa-raiz/investigaciones"),
 ])

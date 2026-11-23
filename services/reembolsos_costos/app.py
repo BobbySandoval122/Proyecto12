@@ -75,6 +75,19 @@ def listar_reembolsos():
     return responder({"datos":consultar("""SELECT rb.id,rb.devolucion_id,rb.monto,rb.metodo,rb.estado,rb.fecha_resolucion,d.folio_devolucion,u.nombre AS encargado
       FROM reembolsos rb JOIN devoluciones d ON d.id=rb.devolucion_id JOIN usuarios u ON u.id=rb.encargado_id WHERE rb.eliminado_en IS NULL ORDER BY rb.id DESC LIMIT 100""")})
 
+@api.get("/reembolsos/pendientes")
+@requiere_jwt(ENCARGADO_REEMBOLSOS)
+def reembolsos_pendientes():
+    """Cola de devoluciones resueltas que todavia no tienen decision economica."""
+    return responder({"datos":consultar("""SELECT d.id AS devolucion_id,d.folio_devolucion,d.estado,
+      p.nombre AS producto,vd.precio_unitario*d.cantidad_devuelta AS monto_maximo
+      FROM devoluciones d JOIN venta_detalle vd ON vd.id=d.venta_detalle_id
+      JOIN lotes l ON l.id=vd.lote_id JOIN productos p ON p.id=l.producto_id
+      WHERE d.estado='resuelta' AND d.eliminado_en IS NULL
+      AND NOT EXISTS (SELECT 1 FROM reembolsos rb
+                       WHERE rb.devolucion_id=d.id AND rb.eliminado_en IS NULL)
+      ORDER BY d.fecha_solicitud""")})
+
 @api.post("/costos")
 @requiere_jwt(COORDINADOR,ENCARGADO_CENTRO,INSPECTOR,ANALISTA,ENCARGADO_REEMBOLSOS)
 def registrar_costo():

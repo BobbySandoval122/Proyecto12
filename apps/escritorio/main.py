@@ -370,7 +370,7 @@ class Ventana(QMainWindow):
         elif rol in (ANALISTA, SUPERVISOR):
             self.agregar(TablaServicio("Decisiones pendientes", "Dictámenes técnicos que esperan una decisión humana de disposición.", lambda: self.cliente.solicitar("disposicion", "GET", "/api/v1/disposicion-inventario/pendientes"), ("id", "folio_devolucion", "producto", "estado_dictamen", "apto_para_inventario", "recomendacion")), "Panel")
         elif rol == REEMBOLSOS:
-            self.agregar(TablaServicio("Reembolsos registrados", "Historial económico consultado directamente al microservicio.", lambda: self.cliente.solicitar("reembolsos", "GET", "/api/v1/reembolsos-costos/reembolsos"), ("id", "folio_devolucion", "monto", "metodo", "estado", "fecha_resolucion")), "Panel")
+            self.agregar(TablaServicio("Reembolsos pendientes", "Devoluciones resueltas que todavía requieren una decisión económica. Usa el ID de esta lista en la pestaña Reembolso.", lambda: self.cliente.solicitar("reembolsos", "GET", "/api/v1/reembolsos-costos/reembolsos/pendientes"), ("devolucion_id", "folio_devolucion", "producto", "monto_maximo", "estado")), "Panel")
         if rol == INSPECTOR: self.agregar(Inspeccion(self.cliente), "Inspección")
         if rol in (ANALISTA, SUPERVISOR): self.agregar(Disposicion(self.cliente), "Disposición")
         if rol == REEMBOLSOS: self.agregar(Reembolso(self.cliente), "Reembolso")

@@ -11,6 +11,8 @@ paths:
   /api/v1/reembolsos-costos/reembolsos:
     post: {summary: Resolver reembolso con autorizacion de un uso y exclusion mutua Redis, parameters: [{name: X-Autorizacion-Operacion, in: header, required: false, description: Obligatorio al aprobar, schema: {type: string}}], requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Reembolso'}}, application/xml: {schema: {$ref: '#/components/schemas/Reembolso'}}}}, responses: {'201': {description: Reembolso creado}, '400': {description: Validacion}, '401': {description: No autenticado}, '403': {description: Rol o autorizacion critica}, '409': {description: Duplicado estado monto o lock}}}
     get: {summary: Listar reembolsos, responses: {'200': {description: Lista}, '401': {description: No autenticado}}}
+  /api/v1/reembolsos-costos/reembolsos/pendientes:
+    get: {summary: Listar devoluciones resueltas sin reembolso vigente, responses: {'200': {description: Cola de trabajo}, '401': {description: No autenticado}, '403': {description: Rol no autorizado}}}
   /api/v1/reembolsos-costos/costos:
     post: {summary: Registrar costo por etapa, requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/Costo'}}, application/xml: {schema: {$ref: '#/components/schemas/Costo'}}}}, responses: {'201': {description: Costo creado}, '400': {description: Validacion}}}
   /api/v1/reembolsos-costos/costos/{devolucion_id}:
