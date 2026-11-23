@@ -168,6 +168,7 @@ class TablaServicio(Pagina):
 class FormularioOperacion(Pagina):
     def __init__(self, titulo, subtitulo):
         super().__init__(titulo, subtitulo)
+        self._operacion_activa = False
         self.tarjeta = Tarjeta(); self.form = QFormLayout(self.tarjeta)
         self.form.setContentsMargins(20, 18, 20, 18); self.form.setSpacing(12)
         self.contenido.addWidget(self.tarjeta)
@@ -176,12 +177,24 @@ class FormularioOperacion(Pagina):
         self.contenido.addWidget(self.resultado)
 
     def ejecutar(self, funcion, boton, mensaje):
+        # Un doble clic puede dejar dos eventos ya encolados antes de que Qt
+        # repinte el boton deshabilitado. La bandera hace idempotente el inicio
+        # desde la interfaz y evita enviar dos operaciones de negocio.
+        if self._operacion_activa:
+            return False
+        self._operacion_activa = True
         boton.setEnabled(False); boton.setText("Procesando…")
         self.trabajo = Trabajo(funcion, self)
         self.trabajo.terminado.connect(lambda r: self.exito(r, mensaje))
         self.trabajo.fallo.connect(self.error)
-        self.trabajo.finished.connect(lambda: (boton.setEnabled(True), boton.setText(boton.property("texto"))))
+        self.trabajo.finished.connect(lambda: self._finalizar_operacion(boton))
         self.trabajo.start()
+        return True
+
+    def _finalizar_operacion(self, boton):
+        self._operacion_activa = False
+        boton.setEnabled(True)
+        boton.setText(boton.property("texto"))
 
     def exito(self, respuesta, mensaje):
         identificador = respuesta.get("id") if isinstance(respuesta, dict) else None

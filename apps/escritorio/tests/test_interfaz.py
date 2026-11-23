@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -7,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from cliente_xml import ClienteXml
 from main import (ADMIN, ANALISTA, CENTRO, INSPECTOR, REEMBOLSOS, SUPERVISOR,
-                  Ventana, crear_aplicacion, filas_respuesta, valor_celda,
+                  Inspeccion, Ventana, crear_aplicacion, filas_respuesta, valor_celda,
                   valor_tabla)
 
 
@@ -87,3 +88,24 @@ def test_cierre_local_elimina_todos_los_secretos():
     assert cliente.access_token is None
     assert cliente.refresh_token is None
     assert cliente.usuario is None
+
+
+def test_doble_click_no_envia_dos_inspecciones():
+    class ClienteContador:
+        def __init__(self):
+            self.llamadas = 0
+
+        def solicitar(self, *args, **kwargs):
+            self.llamadas += 1
+            time.sleep(0.05)
+            return {"id": 1}
+
+    app = crear_aplicacion([])
+    cliente = ClienteContador()
+    formulario = Inspeccion(cliente)
+    formulario.registrar()
+    formulario.registrar()  # simula el segundo evento ya encolado por doble clic
+    formulario.trabajo.wait(1000)
+    app.processEvents()
+    assert cliente.llamadas == 1
+    formulario.close()
